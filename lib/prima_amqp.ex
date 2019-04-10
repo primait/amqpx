@@ -99,7 +99,7 @@ defmodule PrimaAmqp do
   def handle_info({:EXIT, _pid, :normal}, state), do: {:noreply, state}
 
   def handle_info(message, state) do
-    Logger.warn("Ricevuto messaggio sconosciuto", message: inspect(message))
+    Logger.warn("Ricevuto messaggio sconosciuto #{inspect(message)}")
     {:noreply, state}
   end
 
