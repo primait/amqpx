@@ -11,7 +11,7 @@ defmodule PrimaAmqp do
   @backoff 5_000
   @consumer_timeout 10_000
 
-  defstruct [:channel, :queue, :handler_module, :handler_state]
+  defstruct [:modulem, :channel, :queue, :handler_module, :handler_state]
 
   @type state() :: %__MODULE__{}
 
@@ -25,7 +25,7 @@ defmodule PrimaAmqp do
   def init(opts) do
     state = struct(__MODULE__, opts)
 
-    with :ok <- Process.send(self(), {:setup, state}, []) do
+    with :ok <- Process.send(self(), :setup, []) do
       {:ok, state}
     else
       _ -> {:stop, "ERROR"}
@@ -34,7 +34,7 @@ defmodule PrimaAmqp do
 
   @spec rabbitmq_connect(state()) :: {:ok, state()}
   defp rabbitmq_connect(%__MODULE__{handler_module: handler_module, queue: queue} = state) do
-    case Connection.open(Application.get_env(get_application_name(), :rabbit)[:connection_params]) do
+    case Connection.open(Application.get_env(:prima_amqp, :rabbit)[:connection_params]) do
       {:ok, connection} ->
         Process.monitor(connection.pid)
         {:ok, channel} = Channel.open(connection)
@@ -49,7 +49,7 @@ defmodule PrimaAmqp do
 
         {:ok, _consumer_tag} = Basic.consume(channel, queue)
 
-        {:ok, state}
+        {:noreply, state}
 
       {:error, _} ->
         # Reconnection loop
@@ -58,7 +58,7 @@ defmodule PrimaAmqp do
     end
   end
 
-  def handle_info({:setup, state}) do
+  def handle_info(:setup, state) do
     Process.flag(:trap_exit, true)
 
     rabbitmq_connect(state)
@@ -131,10 +131,5 @@ defmodule PrimaAmqp do
 
         state
     end
-  end
-
-  defp get_application_name() do
-    {:ok, name} = :application.get_application(__MODULE__)
-    name
   end
 end
