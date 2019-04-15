@@ -52,7 +52,7 @@ defmodule PrimaAmqp do
         IO.inspect(state)
         {:ok, _} = setup_queue(state)
 
-        handler_state = handler_module.setup(channel, state)
+        handler_state = handler_module.setup(channel)
         state = %{state | handler_state: handler_state}
 
         Basic.qos(channel,
