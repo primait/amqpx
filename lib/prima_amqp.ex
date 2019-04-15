@@ -43,7 +43,7 @@ defmodule PrimaAmqp do
   end
 
   @spec rabbitmq_connect(state()) :: {:ok, state()}
-  defp rabbitmq_connect(%__MODULE__{handler_module: handler_module} = state) do
+  defp rabbitmq_connect(%__MODULE__{handler_module: handler_module, queue: queue} = state) do
     case Connection.open(Application.get_env(:prima_amqp, :rabbit)[:connection_params]) do
       {:ok, connection} ->
         Process.monitor(connection.pid)
