@@ -16,6 +16,7 @@ defmodule PrimaAmqp do
     :channel,
     :queue,
     :exchange,
+    :exchange_type,
     :routing_keys,
     :queue_dead_letter,
     :handler_module,
