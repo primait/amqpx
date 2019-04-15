@@ -65,6 +65,7 @@ defmodule PrimaAmqp do
 
       {:error, _} ->
         # Reconnection loop
+        Logger.error("Unable to connect to RabbitMQ! Retrying with #{@backoff}ms backoff")
         :timer.sleep(@backoff)
         rabbitmq_connect(state)
     end
@@ -140,7 +141,7 @@ defmodule PrimaAmqp do
         {:basic_deliver, payload, %{delivery_tag: tag, redelivered: _redelivered}},
         state
       ) do
-    message = :erlang.binary_to_term(payload)
+    message = payload
 
     state = handle_message(message, tag, state)
 
