@@ -49,7 +49,7 @@ defmodule PrimaAmqp do
         Process.monitor(connection.pid)
         {:ok, channel} = Channel.open(connection)
         state = %{state | channel: channel}
-
+        IO.inspect(state)
         {:ok, _} = setup_queue(state)
 
         handler_state = handler_module.setup(channel, state)
@@ -70,16 +70,14 @@ defmodule PrimaAmqp do
     end
   end
 
-  defp setup_queue(
-         %__MODULE__{
-           channel: channel,
-           queue: queue,
-           exchange: exchange,
-           exchange_type: exchange_type,
-           routing_keys: routing_keys,
-           queue_dead_letter: queue_dead_letter
-         } = state
-       ) do
+  defp setup_queue(%__MODULE__{
+         channel: channel,
+         queue: queue,
+         exchange: exchange,
+         exchange_type: exchange_type,
+         routing_keys: routing_keys,
+         queue_dead_letter: queue_dead_letter
+       }) do
     {:ok, _} = Queue.declare(channel, queue_dead_letter, durable: true)
 
     # Messages that cannot be delivered to any consumer in the main queue will be routed to the error queue
@@ -100,15 +98,13 @@ defmodule PrimaAmqp do
     {:ok, %{}}
   end
 
-  defp setup_queue(
-         %__MODULE__{
-           channel: channel,
-           queue: queue,
-           exchange: exchange,
-           exchange_type: exchange_type,
-           routing_keys: routing_keys
-         } = state
-       ) do
+  defp setup_queue(%__MODULE__{
+         channel: channel,
+         queue: queue,
+         exchange: exchange,
+         exchange_type: exchange_type,
+         routing_keys: routing_keys
+       }) do
     {:ok, _} = Queue.declare(channel, queue, durable: true)
 
     :ok = Exchange.declare(channel, exchange, exchange_type, durable: true)
