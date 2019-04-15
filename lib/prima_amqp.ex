@@ -11,7 +11,16 @@ defmodule PrimaAmqp do
   @backoff 5_000
   @consumer_timeout 10_000
 
-  defstruct [:modulem, :channel, :queue, :handler_module, :handler_state]
+  defstruct [
+    :modulem,
+    :channel,
+    :queue,
+    :exchange,
+    :routing_keys,
+    :queue_dead_letter,
+    :handler_module,
+    :handler_state
+  ]
 
   @type state() :: %__MODULE__{}
 
@@ -33,15 +42,17 @@ defmodule PrimaAmqp do
   end
 
   @spec rabbitmq_connect(state()) :: {:ok, state()}
-  defp rabbitmq_connect(%__MODULE__{handler_module: handler_module, queue: queue} = state) do
+  defp rabbitmq_connect(%__MODULE__{handler_module: handler_module} = state) do
     case Connection.open(Application.get_env(:prima_amqp, :rabbit)[:connection_params]) do
       {:ok, connection} ->
         Process.monitor(connection.pid)
         {:ok, channel} = Channel.open(connection)
-        {:ok, _} = Queue.declare(channel, queue, durable: true)
+        state = %{state | channel: channel}
 
-        handler_state = handler_module.setup(channel)
-        state = %{state | channel: channel, handler_state: handler_state}
+        {:ok, _} = setup_queue(state)
+
+        handler_state = handler_module.setup(channel, state)
+        state = %{state | handler_state: handler_state}
 
         Basic.qos(channel,
           prefetch_count: Map.get(state, :prefetch_count, @default_prefetch_count)
@@ -56,6 +67,55 @@ defmodule PrimaAmqp do
         :timer.sleep(@backoff)
         rabbitmq_connect(state)
     end
+  end
+
+  defp setup_queue(
+         %__MODULE__{
+           channel: channel,
+           queue: queue,
+           exchange: exchange,
+           exchange_type: exchange_type,
+           routing_keys: routing_keys,
+           queue_dead_letter: queue_dead_letter
+         } = state
+       ) do
+    {:ok, _} = Queue.declare(channel, queue_dead_letter, durable: true)
+
+    # Messages that cannot be delivered to any consumer in the main queue will be routed to the error queue
+    {:ok, _} =
+      Queue.declare(channel, queue,
+        durable: true,
+        arguments: [
+          {"x-dead-letter-exchange", :longstr, ""},
+          {"x-dead-letter-routing-key", :longstr, queue_dead_letter}
+        ]
+      )
+
+    :ok = Exchange.declare(channel, exchange, exchange_type, durable: true)
+
+    routing_keys
+    |> Enum.map(fn rk -> :ok = Queue.bind(channel, queue, exchange, routing_key: rk) end)
+
+    {:ok, %{}}
+  end
+
+  defp setup_queue(
+         %__MODULE__{
+           channel: channel,
+           queue: queue,
+           exchange: exchange,
+           exchange_type: exchange_type,
+           routing_keys: routing_keys
+         } = state
+       ) do
+    {:ok, _} = Queue.declare(channel, queue, durable: true)
+
+    :ok = Exchange.declare(channel, exchange, exchange_type, durable: true)
+
+    routing_keys
+    |> Enum.map(fn rk -> :ok = Queue.bind(channel, queue, exchange, routing_key: rk) end)
+
+    {:ok, %{}}
   end
 
   def handle_info(:setup, state) do
