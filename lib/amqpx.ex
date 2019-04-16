@@ -1,4 +1,4 @@
-defmodule PrimaAmqp do
+defmodule Amqpx do
   @moduledoc """
   implementazione generica di un consumer AMQP
   """
