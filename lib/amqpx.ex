@@ -44,7 +44,7 @@ defmodule Amqpx do
 
   @spec rabbitmq_connect(state()) :: {:ok, state()}
   defp rabbitmq_connect(%__MODULE__{handler_module: handler_module, queue: queue} = state) do
-    case Connection.open(Application.get_env(:prima_amqp, :rabbit)[:connection_params]) do
+    case Connection.open(Application.get_env(:amqpx, :rabbit)[:connection_params]) do
       {:ok, connection} ->
         Process.monitor(connection.pid)
         {:ok, channel} = Channel.open(connection)
