@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# source /setup_common.sh
+# source /decrypt_secrets.sh
+
+exec sh -c "$@"

@@ -1,0 +1,18 @@
+version: '2'
+services:
+  web:
+    build: .
+    volumes:
+      - .:/$PWD
+    working_dir: $PWD
+    links:
+      - rabbit
+
+  rabbit:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_VHOST: amqpx
+      RABBITMQ_DEFAULT_USER: amqpx
+      RABBITMQ_DEFAULT_PASS: amqpx
+    ports:
+      - "23556:15672"

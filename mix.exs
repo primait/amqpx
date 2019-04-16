@@ -1,9 +1,9 @@
-defmodule PrimaAmqp.MixProject do
+defmodule Amqpx.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :prima_amqp,
+      app: :amqpx,
       version: "0.1.0",
       elixir: "~> 1.6",
       start_permanent: Mix.env() == :production,
@@ -18,7 +18,8 @@ defmodule PrimaAmqp.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger],
+      mod: {Amqpx.Application, []}
     ]
   end
 

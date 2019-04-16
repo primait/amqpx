@@ -1,4 +1,4 @@
-defmodule PrimaAmqp do
+defmodule Amqpx.Consumer do
   @moduledoc """
   implementazione generica di un consumer AMQP
   """
@@ -12,7 +12,6 @@ defmodule PrimaAmqp do
   @consumer_timeout 10_000
 
   defstruct [
-    :modulem,
     :channel,
     :queue,
     :exchange,
@@ -44,7 +43,7 @@ defmodule PrimaAmqp do
 
   @spec rabbitmq_connect(state()) :: {:ok, state()}
   defp rabbitmq_connect(%__MODULE__{handler_module: handler_module, queue: queue} = state) do
-    case Connection.open(Application.get_env(:prima_amqp, :rabbit)[:connection_params]) do
+    case Connection.open(Application.get_env(:amqpx, :rabbit)[:connection_params]) do
       {:ok, connection} ->
         Process.monitor(connection.pid)
         {:ok, channel} = Channel.open(connection)
@@ -138,12 +137,12 @@ defmodule PrimaAmqp do
   end
 
   def handle_info(
-        {:basic_deliver, payload, %{delivery_tag: tag, redelivered: _redelivered}},
+        {:basic_deliver, payload, %{delivery_tag: tag, redelivered: redelivered}},
         state
       ) do
     message = payload
 
-    state = handle_message(message, tag, state)
+    state = handle_message(message, tag, redelivered, state)
 
     {:noreply, state}
   end
@@ -172,6 +171,7 @@ defmodule PrimaAmqp do
   defp handle_message(
          message,
          tag,
+         redelivered,
          %__MODULE__{handler_module: handler_module, handler_state: handler_state} = state
        ) do
     task = Task.async(handler_module, :handle_message, [message, handler_state])
@@ -182,9 +182,11 @@ defmodule PrimaAmqp do
       %{state | handler_state: handler_state}
     else
       error ->
-        Logger.error("#{error} impossibile gestire il messaggio rabbit #{message}")
+        Logger.error(
+          "#{inspect(error)} impossibile gestire il messaggio rabbit #{inspect(message)}"
+        )
 
-        Basic.reject(state.channel, tag)
+        Basic.reject(state.channel, tag, requeue: !redelivered)
         :timer.sleep(@backoff)
 
         state
