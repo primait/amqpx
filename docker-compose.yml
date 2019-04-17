@@ -15,4 +15,4 @@ services:
       RABBITMQ_DEFAULT_USER: amqpx
       RABBITMQ_DEFAULT_PASS: amqpx
     ports:
-      - "23556:15672"
+      - "23555:15672"

@@ -6,26 +6,18 @@ defmodule Amqpx.Application do
     import Supervisor.Spec
 
     children =
-      consumers(Application.get_env(:amqpx, :consumers)) ++
-        producers(Application.get_env(:amqpx, :producers))
+      consumers(Application.get_env(:amqpx, :consumers) || []) ++
+        producers(Application.get_env(:amqpx, :producers) || [])
 
     opts = [strategy: :one_for_one, name: Amqpx.Supervisor]
     Supervisor.start_link(children, opts)
   end
 
-  defp consumers(nil) do
-    []
-  end
-
   defp consumers(configs) do
-    Enum.map(configs, fn conf -> {Amqpx.Consumer, conf} end)
-  end
-
-  defp producers(nil) do
-    []
+    Enum.map(configs, &Supervisor.child_spec({Amqpx.Consumer, &1}, id: UUID.uuid1()))
   end
 
   defp producers(configs) do
-    Enum.map(configs, fn conf -> {Amqpx.Producer, conf} end)
+    Enum.map(configs, &Supervisor.child_spec({Amqpx.Producer, &1}, id: UUID.uuid1()))
   end
 end

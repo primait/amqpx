@@ -38,6 +38,14 @@ config :amqpx,
       exchange_type: :topic,
       routing_keys: ["amqpx.test"],
       queue_dead_letter: "test_errored"
+    ],
+    [
+      handler_module: Amqpx.Example,
+      queue: "blabla",
+      exchange: "amq.topic",
+      exchange_type: :topic,
+      routing_keys: ["amqpx.bla"],
+      queue_dead_letter: "test_bla"
     ]
   ]
 
