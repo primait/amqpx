@@ -77,7 +77,8 @@ defmodule Amqpx.Consumer do
          exchange_type: exchange_type,
          routing_keys: routing_keys,
          queue_dead_letter: queue_dead_letter
-       }) do
+       })
+       when is_binary(queue_dead_letter) do
     {:ok, _} = Queue.declare(channel, queue_dead_letter, durable: true)
 
     # Messages that cannot be delivered to any consumer in the main queue will be routed to the error queue
@@ -103,7 +104,8 @@ defmodule Amqpx.Consumer do
          queue: queue,
          exchange: exchange,
          exchange_type: exchange_type,
-         routing_keys: routing_keys
+         routing_keys: routing_keys,
+         queue_dead_letter: _queue_dead_letter
        }) do
     {:ok, _} = Queue.declare(channel, queue, durable: true)
 
