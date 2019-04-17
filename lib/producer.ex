@@ -54,8 +54,6 @@ defmodule Amqpx.Producer do
   end
 
   def handle_info(:setup, state) do
-    Process.flag(:trap_exit, true)
-
     rabbitmq_connect(state)
   end
 

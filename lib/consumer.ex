@@ -47,8 +47,8 @@ defmodule Amqpx.Consumer do
       {:ok, connection} ->
         Process.monitor(connection.pid)
         {:ok, channel} = Channel.open(connection)
+
         state = %{state | channel: channel}
-        IO.inspect(state)
         {:ok, _} = setup_queue(state)
 
         handler_state = handler_module.setup(channel)
@@ -116,8 +116,6 @@ defmodule Amqpx.Consumer do
   end
 
   def handle_info(:setup, state) do
-    Process.flag(:trap_exit, true)
-
     rabbitmq_connect(state)
   end
 
@@ -140,9 +138,7 @@ defmodule Amqpx.Consumer do
         {:basic_deliver, payload, %{delivery_tag: tag, redelivered: redelivered}},
         state
       ) do
-    message = payload
-
-    state = handle_message(message, tag, redelivered, state)
+    state = handle_message(payload, tag, redelivered, state)
 
     {:noreply, state}
   end
