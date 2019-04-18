@@ -104,8 +104,7 @@ defmodule Amqpx.Consumer do
          queue: queue,
          exchange: exchange,
          exchange_type: exchange_type,
-         routing_keys: routing_keys,
-         queue_dead_letter: _queue_dead_letter
+         routing_keys: routing_keys
        }) do
     {:ok, _} = Queue.declare(channel, queue, durable: true)
 

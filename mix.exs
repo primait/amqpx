@@ -29,7 +29,7 @@ defmodule Amqpx.MixProject do
       {:amqp, "~> 1.1"},
       {:logger_logstash_backend, github: "primait/logger_logstash_backend", ref: "master"},
       {:dialyxir, "1.0.0-rc.4", only: :dev, runtime: false},
-      {:uuid, "~> 1.1"}
+      {:elixir_uuid, "~> 1.1"}
     ]
   end
 end

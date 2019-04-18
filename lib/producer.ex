@@ -79,7 +79,7 @@ defmodule Amqpx.Producer do
   end
 
   def handle_call(
-        payload,
+        {:publish, payload},
         _from,
         %__MODULE__{
           channel: channel,
@@ -108,7 +108,7 @@ defmodule Amqpx.Producer do
   end
 
   def publish(payload) do
-    with :ok <- GenServer.call(__MODULE__, payload) do
+    with :ok <- GenServer.call(__MODULE__, {:publish, payload}) do
       :ok
     else
       reason ->
