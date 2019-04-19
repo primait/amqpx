@@ -51,7 +51,7 @@ defmodule Amqpx.Consumer do
         state = %{state | channel: channel}
         {:ok, _} = setup_queue(state)
 
-        handler_state = handler_module.setup(channel)
+        {:ok, handler_state} = handler_module.setup(channel)
         state = %{state | handler_state: handler_state}
 
         Basic.qos(channel,
