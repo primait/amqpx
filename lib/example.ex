@@ -1,4 +1,5 @@
 defmodule Amqpx.Example do
+  @moduledoc false
   @behaviour Amqpx.Consumer
   require Logger
 
