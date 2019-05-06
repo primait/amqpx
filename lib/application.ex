@@ -3,7 +3,7 @@ defmodule Amqpx.Application do
   use Application
 
   def start(_type, _args) do
-    import Supervisor.Spec
+    import Supervisor.Spec, warn: false
 
     children =
       consumers(Application.get_env(:amqpx, :consumers) || []) ++
