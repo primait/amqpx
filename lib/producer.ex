@@ -43,7 +43,7 @@ defmodule Amqpx.Producer do
 
         :ok = Exchange.declare(channel, exchange, exchange_type, durable: true)
 
-        {:noreply, state}
+        {:ok, state}
 
       {:error, _} ->
         # Reconnection loop
