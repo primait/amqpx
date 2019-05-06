@@ -4,6 +4,7 @@ services:
     build: .
     volumes:
       - .:/$PWD
+      - ~/.cache:/home/app/.cache
     working_dir: $PWD
     links:
       - rabbit

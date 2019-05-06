@@ -2,4 +2,8 @@
 # source /setup_common.sh
 # source /decrypt_secrets.sh
 
-exec sh -c "$@"
+if [ "$1" == "mix" ]; then
+  exec "$@"
+else [ -n "$1" ];
+  sh -c "$@"
+fi
