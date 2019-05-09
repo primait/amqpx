@@ -94,8 +94,9 @@ defmodule Amqpx.Consumer do
     :ok = Exchange.declare(channel, exchange, exchange_type, durable: true)
 
     _ =
-      routing_keys
-      |> Enum.map(fn rk -> :ok = Queue.bind(channel, queue, exchange, routing_key: rk) end)
+      Enum.map(routing_keys, fn rk ->
+        :ok = Queue.bind(channel, queue, exchange, routing_key: rk)
+      end)
 
     {:ok, %{}}
   end
@@ -112,8 +113,9 @@ defmodule Amqpx.Consumer do
     :ok = Exchange.declare(channel, exchange, exchange_type, durable: true)
 
     _ =
-      routing_keys
-      |> Enum.map(fn rk -> :ok = Queue.bind(channel, queue, exchange, routing_key: rk) end)
+      Enum.map(routing_keys, fn rk ->
+        :ok = Queue.bind(channel, queue, exchange, routing_key: rk)
+      end)
 
     {:ok, %{}}
   end
@@ -182,7 +184,9 @@ defmodule Amqpx.Consumer do
     else
       error ->
         Logger.error(
-          "Impossibile gestire il messaggio rabbit", error: inspect(error), error_message:  inspect(message)
+          "Impossibile gestire il messaggio rabbit",
+          error: inspect(error),
+          error_message: inspect(message)
         )
 
         Basic.reject(state.channel, tag, requeue: !redelivered)
