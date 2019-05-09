@@ -141,7 +141,7 @@ defmodule Amqpx.Consumer do
         {:basic_deliver, payload, %{delivery_tag: tag, redelivered: redelivered}},
         state
       ) do
-    state = handle_message(payload, tag, redelivered, state)
+    {:noreply, handle_message(payload, tag, redelivered, state)}
 
     {:noreply, state}
   end
@@ -182,7 +182,7 @@ defmodule Amqpx.Consumer do
     else
       error ->
         Logger.error(
-          "#{inspect(error)} impossibile gestire il messaggio rabbit #{inspect(message)}"
+          "Impossibile gestire il messaggio rabbit", error: inspect(error), error_message:  inspect(message)
         )
 
         Basic.reject(state.channel, tag, requeue: !redelivered)
