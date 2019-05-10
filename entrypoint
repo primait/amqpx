@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# source /setup_common.sh
+# source /decrypt_secrets.sh
+
+if [ "$1" == "mix" ]; then
+  exec "$@"
+else [ -n "$1" ];
+  sh -c "$@"
+fi
