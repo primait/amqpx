@@ -93,10 +93,9 @@ defmodule Amqpx.Consumer do
 
     :ok = Exchange.declare(channel, exchange, exchange_type, durable: true)
 
-    _ =
-      Enum.map(routing_keys, fn rk ->
-        :ok = Queue.bind(channel, queue, exchange, routing_key: rk)
-      end)
+    Enum.each(routing_keys, fn rk ->
+      :ok = Queue.bind(channel, queue, exchange, routing_key: rk)
+    end)
 
     {:ok, %{}}
   end
@@ -112,10 +111,9 @@ defmodule Amqpx.Consumer do
 
     :ok = Exchange.declare(channel, exchange, exchange_type, durable: true)
 
-    _ =
-      Enum.map(routing_keys, fn rk ->
-        :ok = Queue.bind(channel, queue, exchange, routing_key: rk)
-      end)
+    Enum.each(routing_keys, fn rk ->
+      :ok = Queue.bind(channel, queue, exchange, routing_key: rk)
+    end)
 
     {:ok, %{}}
   end
