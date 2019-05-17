@@ -60,7 +60,7 @@ defmodule Amqpx.Consumer do
 
         {:ok, _consumer_tag} = Basic.consume(channel, queue)
 
-        {:noreply, state}
+        {:ok, state}
 
       {:error, _} ->
         # Reconnection loop
@@ -119,7 +119,9 @@ defmodule Amqpx.Consumer do
   end
 
   def handle_info(:setup, state) do
-    broker_connect(state)
+    with {:ok, state} <- broker_connect(state) do
+      {:noreply, state}
+    end
   end
 
   # Confirmation sent by the broker after registering this process as a consumer
