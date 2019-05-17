@@ -1,6 +1,7 @@
 # App artifacts
 /_build
 /deps
+/doc
 
 # Erlang logs
 /log
