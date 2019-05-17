@@ -1,6 +1,6 @@
 defmodule Amqpx.Consumer do
   @moduledoc """
-  implementazione generica di un consumer AMQP
+  Generic implementation of AMQP consumer
   """
   require Logger
   use GenServer
@@ -41,9 +41,9 @@ defmodule Amqpx.Consumer do
     end
   end
 
-  @spec rabbitmq_connect(state()) :: {:ok, state()}
-  defp rabbitmq_connect(%__MODULE__{handler_module: handler_module, queue: queue} = state) do
-    case Connection.open(Application.get_env(:amqpx, :rabbit)[:connection_params]) do
+  @spec broker_connect(state()) :: {:ok, state()}
+  defp broker_connect(%__MODULE__{handler_module: handler_module, queue: queue} = state) do
+    case Connection.open(Application.get_env(:amqpx, :broker)[:connection_params]) do
       {:ok, connection} ->
         Process.monitor(connection.pid)
         {:ok, channel} = Channel.open(connection)
@@ -64,9 +64,9 @@ defmodule Amqpx.Consumer do
 
       {:error, _} ->
         # Reconnection loop
-        Logger.error("Unable to connect to RabbitMQ! Retrying with #{@backoff}ms backoff")
+        Logger.error("Unable to connect to Broker! Retrying with #{@backoff}ms backoff")
         :timer.sleep(@backoff)
-        rabbitmq_connect(state)
+        broker_connect(state)
     end
   end
 
@@ -119,7 +119,7 @@ defmodule Amqpx.Consumer do
   end
 
   def handle_info(:setup, state) do
-    rabbitmq_connect(state)
+    broker_connect(state)
   end
 
   # Confirmation sent by the broker after registering this process as a consumer
@@ -147,7 +147,7 @@ defmodule Amqpx.Consumer do
   end
 
   def handle_info({:DOWN, _, :process, _pid, _reason}, state) do
-    with {:ok, state} <- rabbitmq_connect(state) do
+    with {:ok, state} <- broker_connect(state) do
       {:noreply, state}
     end
   end
@@ -155,7 +155,7 @@ defmodule Amqpx.Consumer do
   def handle_info({:EXIT, _pid, :normal}, state), do: {:noreply, state}
 
   def handle_info(message, state) do
-    Logger.warn("Ricevuto messaggio sconosciuto #{inspect(message)}")
+    Logger.warn("Unknown message reiceived #{inspect(message)}")
     {:noreply, state}
   end
 
@@ -182,7 +182,7 @@ defmodule Amqpx.Consumer do
     else
       error ->
         Logger.error(
-          "Impossibile gestire il messaggio rabbit",
+          "Message not handled",
           error: inspect(error),
           error_message: inspect(message)
         )

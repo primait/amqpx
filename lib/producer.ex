@@ -1,6 +1,6 @@
 defmodule Amqpx.Producer do
   @moduledoc """
-  implementazione generica di un producer AMQP
+  Generic implementation of AMQP producer
   """
   require Logger
   use GenServer
@@ -33,9 +33,9 @@ defmodule Amqpx.Producer do
     end
   end
 
-  @spec rabbitmq_connect(state()) :: {:ok, state()}
-  defp rabbitmq_connect(%__MODULE__{exchange: exchange, exchange_type: exchange_type} = state) do
-    case Connection.open(Application.get_env(:amqpx, :rabbit)[:connection_params]) do
+  @spec broker_connect(state()) :: {:ok, state()}
+  defp broker_connect(%__MODULE__{exchange: exchange, exchange_type: exchange_type} = state) do
+    case Connection.open(Application.get_env(:amqpx, :broker)[:connection_params]) do
       {:ok, connection} ->
         Process.monitor(connection.pid)
         {:ok, channel} = Channel.open(connection)
@@ -47,18 +47,18 @@ defmodule Amqpx.Producer do
 
       {:error, _} ->
         # Reconnection loop
-        Logger.error("Unable to connect to RabbitMQ! Retrying with #{@backoff}ms backoff")
+        Logger.error("Unable to connect to Broker! Retrying with #{@backoff}ms backoff")
         :timer.sleep(@backoff)
-        rabbitmq_connect(state)
+        broker_connect(state)
     end
   end
 
   def handle_info(:setup, state) do
-    rabbitmq_connect(state)
+    broker_connect(state)
   end
 
   def handle_info({:DOWN, _, :process, _pid, _reason}, state) do
-    with {:ok, state} <- rabbitmq_connect(state) do
+    with {:ok, state} <- broker_connect(state) do
       {:noreply, state}
     end
   end
@@ -94,15 +94,15 @@ defmodule Amqpx.Producer do
       {:reply, :ok, state}
     else
       {:error, reason} ->
-        Logger.error("cannot publish message to RabbitMQ: #{inspect(reason)}")
+        Logger.error("cannot publish message to broker: #{inspect(reason)}")
         {:stop, reason, "error", state}
 
       {:confirm, :timeout} ->
-        Logger.error("cannot publish message to RabbitMQ: publisher timeout")
+        Logger.error("cannot publish message to broker: publisher timeout")
         {:stop, "publisher timeout", "timeout", state}
 
       {:confirm, false} ->
-        Logger.error("cannot publish message to RabbitMQ: broker nack")
+        Logger.error("cannot publish message to broker: broker nack")
         {:stop, "publisher error", "error", state}
     end
   end

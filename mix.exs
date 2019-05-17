@@ -4,11 +4,14 @@ defmodule Amqpx.MixProject do
   def project do
     [
       app: :amqpx,
-      version: "0.1.0",
+      name: "amqpx",
+      version: "1.0.0",
       elixir: "~> 1.6",
       start_permanent: Mix.env() == :production,
       deps: deps(),
+      description: description(),
       aliases: aliases(),
+      package: package(),
       dialyzer: [
         plt_add_apps: [:mix],
         plt_add_deps: :transitive
@@ -41,10 +44,24 @@ defmodule Amqpx.MixProject do
   defp deps do
     [
       {:amqp, "~> 1.1"},
-      {:logger_logstash_backend, github: "primait/logger_logstash_backend", ref: "master"},
+      {:prima_logger_logstash_backend, "~> 1.0"},
       {:dialyxir, "1.0.0-rc.4", only: [:dev, :test], runtime: false},
       {:elixir_uuid, "~> 1.1"},
-      {:credo, "~> 1.0", only: [:dev, :test]}
+      {:credo, "~> 1.0", only: [:dev, :test]},
+      {:ex_doc, ">= 0.0.0", only: :dev}
     ]
+  end
+
+  def package do
+    [
+      name: "amqpx",
+      maintainers: ["Giuseppe D'Anna"],
+      licenses: ["Apache 2.0"],
+      links: %{"Github" => "https://github.com/primait/amqpx"}
+    ]
+  end
+
+  def description do
+    "Simple elixir AMQP client"
   end
 end

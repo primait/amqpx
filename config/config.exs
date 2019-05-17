@@ -58,7 +58,7 @@ config :amqpx,
     ]
   ]
 
-config :amqpx, :rabbit,
+config :amqpx, :broker,
   connection_params: [
     username: "amqpx",
     password: "amqpx",

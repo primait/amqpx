@@ -1,21 +1,69 @@
-# PrimaAmqp
+Amqpx
+=========
 
-**TODO: Add description**
+## About
+A simple AMQP library based on [official elixir amqp client](https://hex.pm/packages/amqp)
+Written to prevent duplicated and boilerplate code to handle all the lifecycle of the amqp connection. Write your publisher or consumer and forget about the rest!
 
 ## Installation
-
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `amqpx` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:amqpx, "~> 0.1.0"}
+    {:amqpx, "~> 1.0"}
   ]
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/amqpx](https://hexdocs.pm/amqpx).
+Add amqpx as extra_applications:
 
+```elixir
+def application do
+  [
+    extra_applications: [:amqpx]
+  ]
+end
+```
+
+## Sample configuration
+
+```elixir
+config :amqpx,
+  consumers: [
+    [
+      handler_module: Amqpx.Example,
+      queue: "test",
+      exchange: "amq.topic",
+      exchange_type: :topic,
+      routing_keys: ["amqpx.test"],
+      queue_dead_letter: "test_errored"
+    ],
+    [
+      handler_module: Amqpx.Example,
+      queue: "blabla",
+      exchange: "amq.topic",
+      exchange_type: :topic,
+      routing_keys: ["amqpx.bla"],
+      queue_dead_letter: "test_bla"
+    ]
+  ]
+
+config :amqpx,
+  producers: [
+    [
+      exchange: "amq.topic",
+      exchange_type: :topic,
+      routing_key: "amqpx.test"
+    ]
+  ]
+
+config :amqpx, :broker,
+  connection_params: [
+    username: "amqpx",
+    password: "amqpx",
+    host: "rabbit",
+    virtual_host: "amqpx",
+    heartbeat: 30,
+    connection_timeout: 10_000
+  ]
+```
