@@ -60,7 +60,7 @@ defmodule Amqpx.Consumer do
 
         {:ok, _consumer_tag} = Basic.consume(channel, queue)
 
-        {:ok, state}
+        {:noreply, state}
 
       {:error, _} ->
         # Reconnection loop
