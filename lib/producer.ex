@@ -10,21 +10,25 @@ defmodule Amqpx.Producer do
   @backoff 5_000
   @publish_timeout 1_000
 
-  defstruct [
-    :channel,
-    :exchange,
-    :exchange_type,
-    :routing_key
-  ]
-
-  @type state() :: %__MODULE__{}
+  @type exchange() :: %{
+          name: String.t(),
+          type: String.t()
+        }
+  @type state() :: %{
+          # TODO: Correct type
+          channel: any(),
+          exchanges: list(exchange())
+        }
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   def init(opts) do
-    state = struct(__MODULE__, opts)
+    state = %{
+      channel: nil,
+      exchanges: opts
+    }
 
     with :ok <- Process.send(self(), :setup, []) do
       {:ok, state}
@@ -34,14 +38,16 @@ defmodule Amqpx.Producer do
   end
 
   @spec broker_connect(state()) :: {:ok, state()}
-  defp broker_connect(%__MODULE__{exchange: exchange, exchange_type: exchange_type} = state) do
+  defp broker_connect(%{exchanges: exchanges} = state) do
     case Connection.open(Application.get_env(:amqpx, :broker)[:connection_params]) do
       {:ok, connection} ->
         Process.monitor(connection.pid)
         {:ok, channel} = Channel.open(connection)
         state = %{state | channel: channel}
 
-        :ok = Exchange.declare(channel, exchange, exchange_type, durable: true)
+        Enum.each(exchanges, fn [name: name, type: type] ->
+          :ok = Exchange.declare(channel, name, type, durable: true)
+        end)
 
         {:ok, state}
 
@@ -72,7 +78,7 @@ defmodule Amqpx.Producer do
     {:noreply, state}
   end
 
-  def terminate(_, %__MODULE__{channel: channel}) do
+  def terminate(_, %{channel: channel}) do
     with %Channel{pid: pid} <- channel do
       if Process.alive?(pid) do
         Channel.close(channel)
@@ -81,13 +87,9 @@ defmodule Amqpx.Producer do
   end
 
   def handle_call(
-        {:publish, payload},
+        {:publish, {exchange, routing_key, payload}},
         _from,
-        %__MODULE__{
-          channel: channel,
-          exchange: exchange,
-          routing_key: routing_key
-        } = state
+        %{channel: channel} = state
       ) do
     Confirm.select(channel)
 
@@ -109,10 +111,8 @@ defmodule Amqpx.Producer do
     end
   end
 
-  def publish(payload) do
-    %{module: prpducer} = __CALLER__
-
-    with :ok <- GenServer.call(prpducer, {:publish, payload}) do
+  def publish(name, routing_key, payload) do
+    with :ok <- GenServer.call(__MODULE__, {:publish, {name, routing_key, payload}}) do
       :ok
     else
       reason ->

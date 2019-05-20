@@ -32,7 +32,7 @@ use Mix.Config
 config :amqpx,
   consumers: [
     [
-      handler_module: Amqpx.Example,
+      handler_module: Amqpx.ConsumerModule1,
       queue: "test",
       exchange: "amq.topic",
       exchange_type: :topic,
@@ -40,7 +40,7 @@ config :amqpx,
       queue_dead_letter: "test_errored"
     ],
     [
-      handler_module: Amqpx.Example,
+      handler_module: Amqpx.ConsumerModule2,
       queue: "blabla",
       exchange: "amq.topic",
       exchange_type: :topic,
@@ -49,12 +49,11 @@ config :amqpx,
     ]
   ]
 
-config :amqpx,
-  producers: [
+config :amqpx, :producer,
+  exchanges: [
     [
-      exchange: "amq.topic",
-      exchange_type: :topic,
-      routing_key: "amqpx.test"
+      name: "amq.topic",
+      type: :topic
     ]
   ]
 

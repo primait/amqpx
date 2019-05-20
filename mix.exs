@@ -44,11 +44,12 @@ defmodule Amqpx.MixProject do
   defp deps do
     [
       {:amqp, "~> 1.1"},
-      {:prima_logger_logstash_backend, "~> 1.0"},
-      {:dialyxir, "1.0.0-rc.4", only: [:dev, :test], runtime: false},
       {:elixir_uuid, "~> 1.1"},
+      {:prima_logger_logstash_backend, "~> 1.0"},
       {:credo, "~> 1.0", only: [:dev, :test]},
-      {:ex_doc, ">= 0.0.0", only: :dev}
+      {:dialyxir, "1.0.0-rc.4", only: [:dev, :test], runtime: false},
+      {:ex_doc, ">= 0.0.0", only: :dev},
+      {:mock, "~> 0.3.0", only: :test}
     ]
   end
 
