@@ -18,6 +18,6 @@ defmodule Amqpx.Application do
   end
 
   defp producers(configs) do
-    Enum.map(configs, &Supervisor.child_spec({Amqpx.Producer, &1}, id: UUID.uuid1()))
+    Enum.map(configs, &Supervisor.child_spec({Amqpx.Producer, &1}, id: &1.module))
   end
 end

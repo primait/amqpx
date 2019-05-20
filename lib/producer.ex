@@ -110,7 +110,9 @@ defmodule Amqpx.Producer do
   end
 
   def publish(payload) do
-    with :ok <- GenServer.call(__MODULE__, {:publish, payload}) do
+    %{module: prpducer} = __CALLER__
+
+    with :ok <- GenServer.call(prpducer, {:publish, payload}) do
       :ok
     else
       reason ->
