@@ -26,6 +26,7 @@ defmodule Amqpx.Producer do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
+  @spec publish(String.t(), String.t(), String.t()) :: :ok | :error
   def publish(name, routing_key, payload) do
     with :ok <- GenServer.call(__MODULE__, {:publish, {name, routing_key, payload}}) do
       :ok
@@ -107,7 +108,7 @@ defmodule Amqpx.Producer do
 
   # Private functions
 
-  @spec confirm_delivery(boolean(), Connection.t()) :: boolean()
+  @spec confirm_delivery(boolean(), Channel.t()) :: boolean() | :timeout
   defp confirm_delivery(false, _), do: true
 
   defp confirm_delivery(true, channel) do
