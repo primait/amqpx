@@ -53,8 +53,6 @@ config :amqpx,
     [
       exchange: "amq.topic",
       exchange_type: :topic,
-      routing_key: "amqpx.test",
-      module: Amqpx.Publisher1
     ]
   ]
 

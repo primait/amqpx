@@ -7,7 +7,7 @@ defmodule Amqpx.Application do
 
     children =
       consumers(Application.get_env(:amqpx, :consumers) || []) ++
-        producer(Application.get_env(:amqpx, :producer) || [])
+        [producer(Application.get_env(:amqpx, :producer) || [])]
 
     opts = [strategy: :one_for_one, name: Amqpx.Supervisor]
     Supervisor.start_link(children, opts)
@@ -18,6 +18,6 @@ defmodule Amqpx.Application do
   end
 
   defp producer(config) do
-    Supervisor.child_spec({Amqpx.Producer, Keyword.get(config, :exchanges)}, [])
+    Supervisor.child_spec({Amqpx.Producer, Keyword.get(config, :exchanges)}, id: :producer)
   end
 end

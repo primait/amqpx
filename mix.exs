@@ -6,7 +6,8 @@ defmodule Amqpx.MixProject do
       app: :amqpx,
       name: "amqpx",
       version: "1.0.1",
-      elixir: "~> 1.6",
+      elixir: "~> 1.7",
+      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :production,
       deps: deps(),
       description: description(),
@@ -14,7 +15,8 @@ defmodule Amqpx.MixProject do
       package: package(),
       dialyzer: [
         plt_add_apps: [:mix],
-        plt_add_deps: :transitive
+        plt_add_deps: :transitive,
+        ignore_warnings: ".dialyzerignore"
       ]
     ]
   end
@@ -26,6 +28,10 @@ defmodule Amqpx.MixProject do
       mod: {Amqpx.Application, []}
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(:dev), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   defp aliases do
     [

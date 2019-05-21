@@ -7,7 +7,7 @@ defmodule Amqpx.Test.Support.Consumer1 do
     {:ok, %{}}
   end
 
-  def handle_message(payload, _state) do
-    {:ok, Jason.decode!(payload)}
+  def handle_message(_payload, state) do
+    {:ok, state}
   end
 end

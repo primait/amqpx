@@ -7,6 +7,6 @@ defmodule Amqpx.Test.Support.Producer2 do
 
   @spec send_payload(map) :: :ok | :error
   def send_payload(payload) do
-    Producer.publish(Jason.encode!(payload))
+    Producer.publish("topic2", "amqpx.test2", Jason.encode!(payload))
   end
 end

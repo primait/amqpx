@@ -1,19 +1,25 @@
 use Mix.Config
 
+config :logger, :console,
+  format: "[$level] $message $metadata\n",
+  metadata: [:error, :error_message]
+
+config :logger, level: :warning
+
 config :amqpx,
   consumers: [
     [
       handler_module: Amqpx.Test.Support.Consumer1,
-      queue: "test",
-      exchange: "amq.topic1",
+      queue: "test1",
+      exchange: "topic1",
       exchange_type: :topic,
       routing_keys: ["amqpx.test1"],
       queue_dead_letter: "test1_errored"
     ],
     [
       handler_module: Amqpx.Test.Support.Consumer2,
-      queue: "test",
-      exchange: "amq.topic2",
+      queue: "test2",
+      exchange: "topic2",
       exchange_type: :topic,
       routing_keys: ["amqpx.test2"],
       queue_dead_letter: "test2_errored"
@@ -23,11 +29,11 @@ config :amqpx,
 config :amqpx, :producer,
   exchanges: [
     [
-      name: "amq.topic1",
+      name: "topic1",
       type: :topic
     ],
     [
-      name: "amq.topic2",
+      name: "topic2",
       type: :topic
     ]
   ]

@@ -15,8 +15,7 @@ defmodule Amqpx.Producer do
           type: String.t()
         }
   @type state() :: %{
-          # TODO: Correct type
-          channel: any(),
+          channel: Connection.t(),
           exchanges: list(exchange())
         }
 
@@ -25,6 +24,8 @@ defmodule Amqpx.Producer do
   end
 
   def init(opts) do
+    {:ok, %{}}
+
     state = %{
       channel: nil,
       exchanges: opts
