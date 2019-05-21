@@ -27,12 +27,11 @@ use Mix.Config
 # Configuration from the imported file will override the ones defined
 # here (which is why it is important to import them last).
 #
-#     import_config "#{Mix.env()}.exs"
 
 config :amqpx,
   consumers: [
     [
-      handler_module: Amqpx.Example,
+      handler_module: Amqpx.ConsumerModule1,
       queue: "test",
       exchange: "amq.topic",
       exchange_type: :topic,
@@ -40,7 +39,7 @@ config :amqpx,
       queue_dead_letter: "test_errored"
     ],
     [
-      handler_module: Amqpx.Example,
+      handler_module: Amqpx.ConsumerModule2,
       queue: "blabla",
       exchange: "amq.topic",
       exchange_type: :topic,
@@ -49,12 +48,12 @@ config :amqpx,
     ]
   ]
 
-config :amqpx,
-  producers: [
+config :amqpx, :producer,
+  publisher_confirms: false,
+  exchanges: [
     [
-      exchange: "amq.topic",
-      exchange_type: :topic,
-      routing_key: "amqpx.test"
+      name: "amq.topic",
+      type: :topic
     ]
   ]
 
@@ -67,3 +66,5 @@ config :amqpx, :broker,
     heartbeat: 30,
     connection_timeout: 10_000
   ]
+
+import_config "#{Mix.env()}.exs"

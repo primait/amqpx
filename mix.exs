@@ -5,8 +5,9 @@ defmodule Amqpx.MixProject do
     [
       app: :amqpx,
       name: "amqpx",
-      version: "1.0.1",
-      elixir: "~> 1.6",
+      version: "2.0.0",
+      elixir: "~> 1.7",
+      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :production,
       deps: deps(),
       description: description(),
@@ -14,7 +15,8 @@ defmodule Amqpx.MixProject do
       package: package(),
       dialyzer: [
         plt_add_apps: [:mix],
-        plt_add_deps: :transitive
+        plt_add_deps: :transitive,
+        ignore_warnings: ".dialyzerignore"
       ]
     ]
   end
@@ -26,6 +28,10 @@ defmodule Amqpx.MixProject do
       mod: {Amqpx.Application, []}
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(:dev), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   defp aliases do
     [
@@ -44,11 +50,12 @@ defmodule Amqpx.MixProject do
   defp deps do
     [
       {:amqp, "~> 1.1"},
-      {:prima_logger_logstash_backend, "~> 1.0"},
-      {:dialyxir, "1.0.0-rc.4", only: [:dev, :test], runtime: false},
       {:elixir_uuid, "~> 1.1"},
+      {:prima_logger_logstash_backend, "~> 1.0"},
       {:credo, "~> 1.0", only: [:dev, :test]},
-      {:ex_doc, ">= 0.0.0", only: :dev}
+      {:dialyxir, "1.0.0-rc.4", only: [:dev, :test], runtime: false},
+      {:ex_doc, ">= 0.0.0", only: :dev},
+      {:mock, "~> 0.3.0", only: :test}
     ]
   end
 

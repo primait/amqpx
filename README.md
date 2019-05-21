@@ -10,7 +10,7 @@ Written to prevent duplicated and boilerplate code to handle all the lifecycle o
 ```elixir
 def deps do
   [
-    {:amqpx, "~> 1.0"}
+    {:amqpx, "~> 2.0"}
   ]
 end
 ```
@@ -31,7 +31,7 @@ end
 config :amqpx,
   consumers: [
     [
-      handler_module: Amqpx.Example,
+      handler_module: Amqpx.ConsumerModule1,
       queue: "test",
       exchange: "amq.topic",
       exchange_type: :topic,
@@ -39,7 +39,7 @@ config :amqpx,
       queue_dead_letter: "test_errored"
     ],
     [
-      handler_module: Amqpx.Example,
+      handler_module: Amqpx.ConsumerModule2,
       queue: "blabla",
       exchange: "amq.topic",
       exchange_type: :topic,
@@ -48,12 +48,16 @@ config :amqpx,
     ]
   ]
 
-config :amqpx,
-  producers: [
+config :amqpx, :producer,
+  publisher_confirms: false,
+  exchanges: [
     [
-      exchange: "amq.topic",
-      exchange_type: :topic,
-      routing_key: "amqpx.test"
+      name: "amq.topic",
+      type: :topic
+    ],
+    [
+      name: "amq.topic2",
+      type: :topic
     ]
   ]
 
