@@ -24,8 +24,6 @@ defmodule Amqpx.Producer do
   end
 
   def init(opts) do
-    {:ok, %{}}
-
     state = %{
       channel: nil,
       exchanges: opts
