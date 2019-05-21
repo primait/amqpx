@@ -27,6 +27,7 @@ config :amqpx,
   ]
 
 config :amqpx, :producer,
+  publisher_confirms: false,
   exchanges: [
     [
       name: "topic1",

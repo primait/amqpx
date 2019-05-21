@@ -48,11 +48,16 @@ config :amqpx,
     ]
   ]
 
-config :amqpx,
-  producers: [
+config :amqpx, :producer,
+  publisher_confirms: false,
+  exchanges: [
     [
-      exchange: "amq.topic",
-      exchange_type: :topic,
+      name: "amq.topic",
+      type: :topic
+    ],
+    [
+      name: "amq.topic2",
+      type: :topic
     ]
   ]
 

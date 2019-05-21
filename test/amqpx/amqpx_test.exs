@@ -10,6 +10,7 @@ defmodule Amqpx.Test.AmqpxTest do
 
     with_mock(Consumer1, handle_message: fn _, s -> {:ok, s} end) do
       Producer1.send_payload(payload)
+      :timer.sleep(50)
       assert_called(Consumer1.handle_message(Jason.encode!(payload), :_))
     end
   end
@@ -21,10 +22,12 @@ defmodule Amqpx.Test.AmqpxTest do
     with_mock(Consumer1, handle_message: fn _, s -> {:ok, s} end) do
       with_mock(Consumer2, handle_message: fn _, s -> {:ok, s} end) do
         Producer1.send_payload(payload)
+        :timer.sleep(50)
         assert_called(Consumer1.handle_message(Jason.encode!(payload), :_))
         refute called(Consumer2.handle_message(Jason.encode!(payload), :_))
 
         Producer2.send_payload(payload2)
+        :timer.sleep(50)
         assert_called(Consumer2.handle_message(Jason.encode!(payload2), :_))
         refute called(Consumer1.handle_message(Jason.encode!(payload2), :_))
       end

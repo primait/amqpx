@@ -18,6 +18,6 @@ defmodule Amqpx.Application do
   end
 
   defp producer(config) do
-    Supervisor.child_spec({Amqpx.Producer, Keyword.get(config, :exchanges)}, id: :producer)
+    {Amqpx.Producer, config}
   end
 end
