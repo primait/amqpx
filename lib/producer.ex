@@ -26,9 +26,9 @@ defmodule Amqpx.Producer do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @spec publish(String.t(), String.t(), String.t()) :: :ok | :error
-  def publish(name, routing_key, payload) do
-    with :ok <- GenServer.call(__MODULE__, {:publish, {name, routing_key, payload}}) do
+  @spec publish(String.t(), String.t(), String.t(), Keyword.t()) :: :ok | :error
+  def publish(name, routing_key, payload, options \\ []) do
+    with :ok <- GenServer.call(__MODULE__, {:publish, {name, routing_key, payload, options}}) do
       :ok
     else
       reason ->
@@ -76,11 +76,18 @@ defmodule Amqpx.Producer do
   end
 
   def handle_call(
-        {:publish, {exchange, routing_key, payload}},
+        {:publish, {exchange, routing_key, payload, options}},
         _from,
         %{channel: channel, publisher_confirms: publisher_confirms} = state
       ) do
-    with :ok <- Basic.publish(channel, exchange, routing_key, payload, persistent: true),
+    with :ok <-
+           Basic.publish(
+             channel,
+             exchange,
+             routing_key,
+             payload,
+             Keyword.merge([persistent: true], options)
+           ),
          {:confirm, true} <- {:confirm, confirm_delivery(publisher_confirms, channel)} do
       {:reply, :ok, state}
     else
