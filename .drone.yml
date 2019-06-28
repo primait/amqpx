@@ -28,7 +28,7 @@ pipeline:
       - docker-compose run web mix deps.get
       - docker-compose run -e MIX_ENV=test web mix compile --all-warnings --warnings-as-errors --ignore-module-conflict --debug-info
       - docker-compose run -e MIX_ENV=test web mix check
-      # - docker-compose run -e MIX_ENV=test web mix test
+      - docker-compose run -e MIX_ENV=test web mix test
       - cache-save deps _build ~/.cache
 
   notify_email:
