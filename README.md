@@ -15,14 +15,13 @@ def deps do
 end
 ```
 
-Add amqpx as extra_applications:
+From 3.0.0 AMQPX is no longer an application. This is so the client can choose in which environment or configuration to have consumers up and running.
+You would then need to start your consumers and producer in the client's supervision tree, instead of adding AMQPX to the `extra_application` list as it was in the past:
 
 ```elixir
-def application do
-  [
-    extra_applications: [:amqpx]
-  ]
-end
+Enum.each(Application.get_env(:amqpx, :consumers), & Amqpx.Consumer.start_link(&1))
+Amqpx.Producer.start_link(Application.get_env(:amqpx, :producer))
+
 ```
 
 ## Sample configuration
