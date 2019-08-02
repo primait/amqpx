@@ -1,4 +1,4 @@
-FROM prima/elixir-official:1.7.4-4
+FROM prima/elixir-official:1.8.2
 
 WORKDIR /code
 
