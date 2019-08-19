@@ -128,7 +128,7 @@ steps:
       - . /etc/profile.d/ecs-credentials-endpoint
       - cache-save _build deps
     depends_on:
-      - deploy
+      - test
     # when:
     #   branch:
     #     - master
