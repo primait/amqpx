@@ -19,7 +19,8 @@ defmodule Amqpx.Consumer do
     :routing_keys,
     :queue_dead_letter,
     :handler_module,
-    :handler_state
+    :handler_state,
+    queue_dead_letter_exchange: ""
   ]
 
   @type state() :: %__MODULE__{}
@@ -76,7 +77,8 @@ defmodule Amqpx.Consumer do
          exchange: exchange,
          exchange_type: exchange_type,
          routing_keys: routing_keys,
-         queue_dead_letter: queue_dead_letter
+         queue_dead_letter: queue_dead_letter,
+         queue_dead_letter_exchange: queue_dead_letter_exchange
        })
        when is_binary(queue_dead_letter) do
     {:ok, _} = Queue.declare(channel, queue_dead_letter, durable: true)
@@ -86,7 +88,7 @@ defmodule Amqpx.Consumer do
       Queue.declare(channel, queue,
         durable: true,
         arguments: [
-          {"x-dead-letter-exchange", :longstr, ""},
+          {"x-dead-letter-exchange", :longstr, queue_dead_letter_exchange},
           {"x-dead-letter-routing-key", :longstr, queue_dead_letter}
         ]
       )
