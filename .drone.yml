@@ -1,51 +1,137 @@
-clone:
-  cache-restore:
-    image: prima/drone-tools:1.14.3
-    volumes:
-      - /var/cache/ci/${DRONE_REPO}/${DRONE_BRANCH}:/var/cache/ci
-      - /etc/profile.d/ecs-credentials-endpoint:/etc/profile.d/ecs-credentials-endpoint
-    commands:
-      - . /etc/profile.d/ecs-credentials-endpoint
-      - cache-restore --files --no-docker-cache-pull
-  git:
-    image: plugins/git
-    recursive: false
+---
+kind: pipeline
+name: default
 
-pipeline:
-  build:
-    image: prima/drone-tools:1.14.3
+services:
+  - name: rabbit
+    image: rabbitmq:3
     environment:
-      - COMPOSE_PROJECT_NAME=${DRONE_REPO_NAME}${DRONE_BUILD_NUMBER}
+        RABBITMQ_DEFAULT_VHOST: amqpx
+        RABBITMQ_DEFAULT_USER: amqpx
+        RABBITMQ_DEFAULT_PASS: amqpx
+
+volumes:
+  - name: docker
+    host:
+      path: /var/run/docker.sock
+  - name: ecs
+    host:
+      path: /etc/profile.d/ecs-credentials-endpoint
+
+clone:
+  depth: 1
+
+steps:
+  - name: cache-restore
+    image: prima/drone-tools:1.15.0
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /var/cache/ci/${DRONE_REPO}/${DRONE_BRANCH}:/var/cache/ci
-      - /etc/profile.d/ecs-credentials-endpoint:/etc/profile.d/ecs-credentials-endpoint
+      - name: ecs
+        path: /etc/profile.d/ecs-credentials-endpoint
+      - name: docker
+        path: /var/run/docker.sock
     commands:
       - . /etc/profile.d/ecs-credentials-endpoint
-      - prepare-docker-compose
-      - cache-restore --docker-cache-pull --no-files
-      - docker-compose build
-      - docker-compose run web mix deps.get
-      - docker-compose run -e MIX_ENV=test web mix compile --all-warnings --warnings-as-errors --ignore-module-conflict --debug-info
-      - docker-compose run -e MIX_ENV=test web mix check
-      - docker-compose run -e MIX_ENV=test web mix test
-      - cache-save deps _build ~/.cache
+      - cache-restore
 
-  notify_email:
+  - name: build-image
+    image: prima/drone-tools:1.15.0
+    volumes:
+      - name: docker
+        path: /var/run/docker.sock
+    commands:
+      - sed -i 's/USER app/USER root/g' Dockerfile
+      - docker build -t prima/amqpx-ci:1 .
+    depends_on:
+      - cache-restore
+
+  - name: init
+    image: prima/amqpx-ci:1
+    commands:
+      - mix deps.get
+    depends_on:
+      - build-image
+
+  - name: compile-dev
+    image: prima/amqpx-ci:1
+    environment:
+      MIX_ENV: dev
+    commands:
+      - mix compile --all-warnings --ignore-module-conflict --warnings-as-errors --debug-info
+    depends_on:
+      - init
+
+  - name: compile-test
+    image: prima/amqpx-ci:1
+    environment:
+      MIX_ENV: test
+    commands:
+      - mix compile --all-warnings --ignore-module-conflict --warnings-as-errors --debug-info
+    depends_on:
+      - init
+
+  - name: format
+    image: prima/amqpx-ci:1
+    environment:
+      MIX_ENV: test
+    commands:
+      - mix format --check-formatted mix.exs "lib/**/*.{ex,exs}" "test/**/*.{ex,exs}" "priv/**/*.{ex,exs}" "config/**/*.{ex,exs}"
+    depends_on:
+      - compile-test
+
+  - name: credo
+    image: prima/amqpx-ci:1
+    environment:
+      MIX_ENV: test
+    commands:
+      - mix credo
+    depends_on:
+      - compile-test
+
+  - name: dyalizer
+    image: prima/amqpx-ci:1
+    environment:
+      MIX_ENV: test
+    commands:
+      - mix dialyzer --halt-exit-status
+    depends_on:
+      - compile-test
+
+  - name: test
+    image: prima/amqpx-ci:1
+    environment:
+      MIX_ENV: test
+    commands:
+      - mix test
+    depends_on:
+      - compile-test
+
+  - name: notify_email
     image: drillster/drone-email
     host: email-smtp.eu-west-1.amazonaws.com
-    secrets: [ email_username, email_password ]
+    environment:
+      email_username:
+        from_secret: email_username
+      email_password:
+        from_secret: email_password
     from: noreply@prima.it
     when:
       status: [ changed, failure ]
 
-  cleanup:
-    image: prima/drone-tools:1.14.3
-    environment:
-      - COMPOSE_PROJECT_NAME=${DRONE_REPO_NAME}${DRONE_BUILD_NUMBER}
+  - name: cache-save
+    image: prima/drone-tools:1.15.0
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - name: ecs
+        path: /etc/profile.d/ecs-credentials-endpoint
+      - name: docker
+        path: /var/run/docker.sock
     commands:
-      - teardown
+      - . /etc/profile.d/ecs-credentials-endpoint
+      - cache-save _build deps
+    depends_on:
+      - format
+      - credo
+      - dyalizer
+      - test
     when:
-      status: [ success, killed, failure ]
+      branch:
+        - master
