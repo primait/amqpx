@@ -8,7 +8,6 @@ defmodule Amqpx.Producer do
   alias AMQP.Channel
 
   @backoff 5_000
-  @publish_timeout 1_000
 
   @type exchange() :: %{
           name: String.t(),
@@ -17,9 +16,16 @@ defmodule Amqpx.Producer do
   @type state() :: %{
           channel: Connection.t(),
           publisher_confirms: boolean,
+          publish_timeout: integer,
           exchanges: list(exchange())
         }
 
+  defstruct [
+    :channel,
+    :publisher_confirms,
+    :exchanges,
+    publish_timeout: 1_000
+  ]
   # Public API
 
   def start_link(opts) do
@@ -39,12 +45,8 @@ defmodule Amqpx.Producer do
 
   # Callbacks
 
-  def init(publisher_confirms: publisher_confirms, exchanges: exchanges) do
-    state = %{
-      channel: nil,
-      publisher_confirms: publisher_confirms,
-      exchanges: exchanges
-    }
+  def init(opts) do
+    state = struct(__MODULE__, opts)
 
     # Can't return anything else but :ok when sending to self()
     Process.send(self(), :setup, [])
@@ -78,7 +80,7 @@ defmodule Amqpx.Producer do
   def handle_call(
         {:publish, {exchange, routing_key, payload, options}},
         _from,
-        %{channel: channel, publisher_confirms: publisher_confirms} = state
+        %{channel: channel, publisher_confirms: publisher_confirms, publish_timeout: publish_timeout} = state
       ) do
     with :ok <-
            Basic.publish(
@@ -88,7 +90,7 @@ defmodule Amqpx.Producer do
              payload,
              Keyword.merge([persistent: true], options)
            ),
-         {:confirm, true} <- {:confirm, confirm_delivery(publisher_confirms, channel)} do
+         {:confirm, true} <- {:confirm, confirm_delivery(publisher_confirms, publish_timeout, channel)} do
       {:reply, :ok, state}
     else
       {:error, reason} ->
@@ -115,11 +117,11 @@ defmodule Amqpx.Producer do
 
   # Private functions
 
-  @spec confirm_delivery(boolean(), Channel.t()) :: boolean() | :timeout
-  defp confirm_delivery(false, _), do: true
+  @spec confirm_delivery(boolean(), integer(), Channel.t()) :: boolean() | :timeout
+  defp confirm_delivery(false, _, _), do: true
 
-  defp confirm_delivery(true, channel) do
-    Confirm.wait_for_confirms(channel, @publish_timeout)
+  defp confirm_delivery(true, timeout, channel) do
+    Confirm.wait_for_confirms(channel, timeout)
   end
 
   @spec broker_connect(state()) :: {:ok, state()}

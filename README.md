@@ -49,7 +49,8 @@ config :amqpx,
   ]
 
 config :amqpx, :producer,
-  publisher_confirms: false,
+  publisher_confirms: true,
+  publish_timeout: 2_000, #default is 1_000
   exchanges: [
     [
       name: "amq.topic",
