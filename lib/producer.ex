@@ -26,6 +26,7 @@ defmodule Amqpx.Producer do
     :exchanges,
     publish_timeout: 1_000
   ]
+
   # Public API
 
   def start_link(opts) do
@@ -80,7 +81,11 @@ defmodule Amqpx.Producer do
   def handle_call(
         {:publish, {exchange, routing_key, payload, options}},
         _from,
-        %{channel: channel, publisher_confirms: publisher_confirms, publish_timeout: publish_timeout} = state
+        %{
+          channel: channel,
+          publisher_confirms: publisher_confirms,
+          publish_timeout: publish_timeout
+        } = state
       ) do
     with :ok <-
            Basic.publish(
@@ -90,7 +95,8 @@ defmodule Amqpx.Producer do
              payload,
              Keyword.merge([persistent: true], options)
            ),
-         {:confirm, true} <- {:confirm, confirm_delivery(publisher_confirms, publish_timeout, channel)} do
+         {:confirm, true} <-
+           {:confirm, confirm_delivery(publisher_confirms, publish_timeout, channel)} do
       {:reply, :ok, state}
     else
       {:error, reason} ->
