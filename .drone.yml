@@ -115,7 +115,8 @@ steps:
         from_secret: email_password
     from: noreply@prima.it
     when:
-      status: [ changed, failure ]
+      status:
+        - failure
 
   - name: cache-save
     image: prima/drone-tools:1.15.0
