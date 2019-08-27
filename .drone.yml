@@ -105,19 +105,6 @@ steps:
     depends_on:
       - compile-test
 
-  - name: notify_email
-    image: drillster/drone-email
-    host: email-smtp.eu-west-1.amazonaws.com
-    environment:
-      email_username:
-        from_secret: email_username
-      email_password:
-        from_secret: email_password
-    from: noreply@prima.it
-    when:
-      status:
-        - failure
-
   - name: cache-save
     image: prima/drone-tools:1.15.0
     volumes:
@@ -136,3 +123,29 @@ steps:
     when:
       branch:
         - master
+
+---
+kind: pipeline
+name: notify
+
+clone:
+  disable: true
+
+steps:
+  - name: notify_email
+    image: drillster/drone-email
+    environment:
+      PLUGIN_USERNAME:
+        from_secret: email_username
+      PLUGIN_PASSWORD:
+        from_secret: email_password
+    settings:
+      host: email-smtp.eu-west-1.amazonaws.com
+      from: noreply@prima.it
+
+trigger:
+  status:
+    - failure
+
+depends_on:
+  - default
