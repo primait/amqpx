@@ -9,7 +9,6 @@ defmodule Amqpx.Consumer do
 
   @default_prefetch_count 50
   @backoff 5_000
-  # @consumer_timeout 10_000
 
   defstruct [
     :channel,
@@ -35,13 +34,11 @@ defmodule Amqpx.Consumer do
   def init(opts) do
     state = struct(__MODULE__, opts)
 
-    broker_connect(state)
-
-    # with :ok <- Process.send(self(), :setup, []) do
-    #   {:ok, state}
-    # else
-    #   _ -> {:stop, "ERROR"}
-    # end
+    with :ok <- Process.send(self(), :setup, []) do
+      {:ok, state}
+    else
+      _ -> {:stop, "ERROR"}
+    end
   end
 
   @spec broker_connect(state()) :: {:ok, state()}
@@ -122,11 +119,11 @@ defmodule Amqpx.Consumer do
     {:ok, %{}}
   end
 
-  # def handle_info(:setup, state) do
-  #   with {:ok, state} <- broker_connect(state) do
-  #     {:noreply, state}
-  #   end
-  # end
+  def handle_info(:setup, state) do
+    with {:ok, state} <- broker_connect(state) do
+      {:noreply, state}
+    end
+  end
 
   # Confirmation sent by the broker after registering this process as a consumer
   def handle_info({:basic_consume_ok, %{consumer_tag: _consumer_tag}}, state) do
@@ -179,8 +176,6 @@ defmodule Amqpx.Consumer do
          redelivered,
          %__MODULE__{handler_module: handler_module, handler_state: handler_state} = state
        ) do
-    # task = Task.async(handler_module, :handle_message, [message, handler_state])
-
     try do
       {:ok, handler_state} = handler_module.handle_message(message, handler_state)
       Basic.ack(state.channel, tag)
@@ -196,22 +191,5 @@ defmodule Amqpx.Consumer do
         :timer.sleep(@backoff)
         state
     end
-
-    # with {:ok, handler_state} <- handler_module.handle_message(message, handler_state) do
-    #   Basic.ack(state.channel, tag)
-    #   %{state | handler_state: handler_state}
-    # else
-    #   error ->
-    #     Logger.error(
-    #       "Message not handled",
-    #       error: inspect(error),
-    #       error_message: inspect(message)
-    #     )
-    #
-    #     Basic.reject(state.channel, tag, requeue: !redelivered)
-    #     :timer.sleep(@backoff)
-    #
-    #     state
-    # end
   end
 end
