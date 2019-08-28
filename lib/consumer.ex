@@ -45,7 +45,7 @@ defmodule Amqpx.Consumer do
   end
 
   @spec broker_connect(state()) :: {:ok, state()}
-  defp broker_connect(%__MODULE__{handler_module: handler_module, queue: queue} = state) do
+  defp broker_connect(%__MODULE__{queue: queue} = state) do
     case Connection.open(Application.get_env(:amqpx, :broker)[:connection_params]) do
       {:ok, connection} ->
         Process.monitor(connection.pid)
