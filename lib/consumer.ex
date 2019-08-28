@@ -45,7 +45,7 @@ defmodule Amqpx.Consumer do
   end
 
   @spec broker_connect(state()) :: {:ok, state()}
-  defp broker_connect(%__MODULE__{queue: queue} = state) do
+  defp broker_connect(%__MODULE__{handler_module: handler_module, queue: queue} = state) do
     case Connection.open(Application.get_env(:amqpx, :broker)[:connection_params]) do
       {:ok, connection} ->
         Process.monitor(connection.pid)
@@ -54,8 +54,8 @@ defmodule Amqpx.Consumer do
         state = %{state | channel: channel}
         {:ok, _} = setup_queue(state)
 
-        # {:ok, handler_state} = handler_module.setup(channel)
-        # state = %{state | handler_state: handler_state}
+        {:ok, handler_state} = handler_module.setup(channel)
+        state = %{state | handler_state: handler_state}
 
         Basic.qos(channel,
           prefetch_count: Map.get(state, :prefetch_count, @default_prefetch_count)
@@ -181,21 +181,37 @@ defmodule Amqpx.Consumer do
        ) do
     # task = Task.async(handler_module, :handle_message, [message, handler_state])
 
-    with {:ok, handler_state} <- handler_module.handle_message(message, handler_state) do
+    try do
+      handler_module.handle_message(message, handler_state)
       Basic.ack(state.channel, tag)
       %{state | handler_state: handler_state}
-    else
-      error ->
+    rescue
+      e in RuntimeError ->
         Logger.error(
           "Message not handled",
-          error: inspect(error),
-          error_message: inspect(message)
+          error: inspect(e)
         )
 
         Basic.reject(state.channel, tag, requeue: !redelivered)
         :timer.sleep(@backoff)
-
         state
     end
+
+    # with {:ok, handler_state} <- handler_module.handle_message(message, handler_state) do
+    #   Basic.ack(state.channel, tag)
+    #   %{state | handler_state: handler_state}
+    # else
+    #   error ->
+    #     Logger.error(
+    #       "Message not handled",
+    #       error: inspect(error),
+    #       error_message: inspect(message)
+    #     )
+    #
+    #     Basic.reject(state.channel, tag, requeue: !redelivered)
+    #     :timer.sleep(@backoff)
+    #
+    #     state
+    # end
   end
 end
