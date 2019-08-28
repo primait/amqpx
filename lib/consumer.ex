@@ -182,7 +182,7 @@ defmodule Amqpx.Consumer do
     # task = Task.async(handler_module, :handle_message, [message, handler_state])
 
     try do
-      handler_module.handle_message(message, handler_state)
+      {:ok, handler_state} = handler_module.handle_message(message, handler_state)
       Basic.ack(state.channel, tag)
       %{state | handler_state: handler_state}
     rescue
