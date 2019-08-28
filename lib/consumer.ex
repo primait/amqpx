@@ -35,11 +35,13 @@ defmodule Amqpx.Consumer do
   def init(opts) do
     state = struct(__MODULE__, opts)
 
-    with :ok <- Process.send(self(), :setup, []) do
-      {:ok, state}
-    else
-      _ -> {:stop, "ERROR"}
-    end
+    broker_connect(state)
+
+    # with :ok <- Process.send(self(), :setup, []) do
+    #   {:ok, state}
+    # else
+    #   _ -> {:stop, "ERROR"}
+    # end
   end
 
   @spec broker_connect(state()) :: {:ok, state()}
@@ -52,8 +54,8 @@ defmodule Amqpx.Consumer do
         state = %{state | channel: channel}
         {:ok, _} = setup_queue(state)
 
-        {:ok, handler_state} = handler_module.setup(channel)
-        state = %{state | handler_state: handler_state}
+        # {:ok, handler_state} = handler_module.setup(channel)
+        # state = %{state | handler_state: handler_state}
 
         Basic.qos(channel,
           prefetch_count: Map.get(state, :prefetch_count, @default_prefetch_count)
@@ -120,11 +122,11 @@ defmodule Amqpx.Consumer do
     {:ok, %{}}
   end
 
-  def handle_info(:setup, state) do
-    with {:ok, state} <- broker_connect(state) do
-      {:noreply, state}
-    end
-  end
+  # def handle_info(:setup, state) do
+  #   with {:ok, state} <- broker_connect(state) do
+  #     {:noreply, state}
+  #   end
+  # end
 
   # Confirmation sent by the broker after registering this process as a consumer
   def handle_info({:basic_consume_ok, %{consumer_tag: _consumer_tag}}, state) do
@@ -177,10 +179,9 @@ defmodule Amqpx.Consumer do
          redelivered,
          %__MODULE__{handler_module: handler_module, handler_state: handler_state} = state
        ) do
-    task = Task.async(handler_module, :handle_message, [message, handler_state])
+    # task = Task.async(handler_module, :handle_message, [message, handler_state])
 
-    with {:ok, result} <- Task.yield(task, @consumer_timeout),
-         {:ok, handler_state} <- result do
+    with {:ok, handler_state} <- handler_module.handle_message(message, handler_state) do
       Basic.ack(state.channel, tag)
       %{state | handler_state: handler_state}
     else
