@@ -9,7 +9,7 @@ defmodule Amqpx.Consumer do
 
   @default_prefetch_count 50
   @backoff 5_000
-  @consumer_timeout 10_000
+  # @consumer_timeout 10_000
 
   defstruct [
     :channel,
