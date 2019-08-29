@@ -9,7 +9,6 @@ defmodule Amqpx.Consumer do
 
   @default_prefetch_count 50
   @backoff 5_000
-  @consumer_timeout 10_000
 
   defstruct [
     :channel,
@@ -177,23 +176,19 @@ defmodule Amqpx.Consumer do
          redelivered,
          %__MODULE__{handler_module: handler_module, handler_state: handler_state} = state
        ) do
-    task = Task.async(handler_module, :handle_message, [message, handler_state])
-
-    with {:ok, result} <- Task.yield(task, @consumer_timeout),
-         {:ok, handler_state} <- result do
+    try do
+      {:ok, handler_state} = handler_module.handle_message(message, handler_state)
       Basic.ack(state.channel, tag)
       %{state | handler_state: handler_state}
-    else
-      error ->
+    rescue
+      e in RuntimeError ->
         Logger.error(
           "Message not handled",
-          error: inspect(error),
-          error_message: inspect(message)
+          error: inspect(e)
         )
 
         Basic.reject(state.channel, tag, requeue: !redelivered)
         :timer.sleep(@backoff)
-
         state
     end
   end
