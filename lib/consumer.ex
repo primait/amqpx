@@ -181,7 +181,7 @@ defmodule Amqpx.Consumer do
       Basic.ack(state.channel, tag)
       %{state | handler_state: handler_state}
     rescue
-      e in RuntimeError ->
+      e in _ ->
         Logger.error(
           "Message not handled",
           error: inspect(e)
