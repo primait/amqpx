@@ -31,16 +31,20 @@ use Mix.Config
 config :amqpx,
   consumers: [
     [
-      handler_module: Amqpx.ConsumerModule1,
+      handler_module: Amqpx.Test.Support.Consumer1,
       queue: "test",
       exchange: "amq.topic",
       exchange_type: :topic,
       routing_keys: ["amqpx.test"],
       queue_dead_letter: "test_errored",
-      queue_dead_letter_exchange: "test_errored_exchange"
+      queue_dead_letter_exchange: "test_errored_exchange",
+      handler_args: [
+          key: "value",
+          or: %{}
+      ]
     ],
     [
-      handler_module: Amqpx.ConsumerModule2,
+      handler_module: Amqpx.Test.Support.Consumer2,
       queue: "blabla",
       exchange: "amq.topic",
       exchange_type: :topic,

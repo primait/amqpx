@@ -3,11 +3,12 @@ defmodule Amqpx.Test.Support.Consumer1 do
 
   @behaviour Amqpx.Consumer
 
-  def setup(_channel) do
+  def setup(_channel, args) do
+    IO.inspect args
     {:ok, %{}}
   end
 
-  def handle_message(_payload, state) do
+  def handle_message(payload, state) do
     {:ok, state}
   end
 end
