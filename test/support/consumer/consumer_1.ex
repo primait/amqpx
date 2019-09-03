@@ -8,7 +8,7 @@ defmodule Amqpx.Test.Support.Consumer1 do
     {:ok, %{}}
   end
 
-  def handle_message(payload, state) do
+  def handle_message(_payload, state) do
     {:ok, state}
   end
 end
