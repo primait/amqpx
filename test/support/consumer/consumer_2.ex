@@ -3,7 +3,7 @@ defmodule Amqpx.Test.Support.Consumer2 do
 
   @behaviour Amqpx.Consumer
 
-  def setup(_channel, _) do
+  def setup(_channel, _args) do
     {:ok, %{}}
   end
 
