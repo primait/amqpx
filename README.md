@@ -36,7 +36,11 @@ config :amqpx,
       exchange_type: :topic,
       routing_keys: ["amqpx.test"],
       queue_dead_letter: "test_errored",
-      queue_dead_letter_exchange: "test_errored_exchange"
+      queue_dead_letter_exchange: "test_errored_exchange", # default: ""
+      handler_args: [ # default: []
+          key: "value",
+          # or something else
+      ]
     ],
     [
       handler_module: Amqpx.ConsumerModule2,

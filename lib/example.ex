@@ -3,7 +3,7 @@ defmodule Amqpx.Example do
   @behaviour Amqpx.Consumer
   require Logger
 
-  def setup(_channel) do
+  def setup(_channel, _args) do
     {:ok, %{}}
   end
 

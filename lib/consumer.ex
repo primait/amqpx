@@ -19,12 +19,13 @@ defmodule Amqpx.Consumer do
     :queue_dead_letter,
     :handler_module,
     :handler_state,
-    queue_dead_letter_exchange: ""
+    queue_dead_letter_exchange: "",
+    handler_args: []
   ]
 
   @type state() :: %__MODULE__{}
 
-  @callback setup(Channel.t()) :: {:ok, map()} | {:error, any()}
+  @callback setup(Channel.t(), any()) :: {:ok, map()} | {:error, any()}
   @callback handle_message(any(), map()) :: {:ok, map()} | {:error, any()}
 
   def start_link(opts) do
@@ -42,7 +43,10 @@ defmodule Amqpx.Consumer do
   end
 
   @spec broker_connect(state()) :: {:ok, state()}
-  defp broker_connect(%__MODULE__{handler_module: handler_module, queue: queue} = state) do
+  defp broker_connect(
+         %__MODULE__{handler_module: handler_module, queue: queue, handler_args: handler_args} =
+           state
+       ) do
     case Connection.open(Application.get_env(:amqpx, :broker)[:connection_params]) do
       {:ok, connection} ->
         Process.monitor(connection.pid)
@@ -51,7 +55,7 @@ defmodule Amqpx.Consumer do
         state = %{state | channel: channel}
         {:ok, _} = setup_queue(state)
 
-        {:ok, handler_state} = handler_module.setup(channel)
+        {:ok, handler_state} = handler_module.setup(channel, handler_args)
         state = %{state | handler_state: handler_state}
 
         Basic.qos(channel,
