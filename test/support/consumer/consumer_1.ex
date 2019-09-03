@@ -4,7 +4,7 @@ defmodule Amqpx.Test.Support.Consumer1 do
   @behaviour Amqpx.Consumer
 
   def setup(_channel, args) do
-    IO.inspect args
+    IO.inspect(args)
     {:ok, %{}}
   end
 
