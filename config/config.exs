@@ -38,8 +38,7 @@ config :amqpx,
       routing_keys: ["amqpx.test"],
       queue_dead_letter: "test_errored",
       queue_dead_letter_exchange: "test_errored_exchange",
-      handler_args: [
-      ]
+      handler_args: []
     ],
     [
       handler_module: Amqpx.Test.Support.Consumer2,
