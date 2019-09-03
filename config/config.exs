@@ -39,8 +39,6 @@ config :amqpx,
       queue_dead_letter: "test_errored",
       queue_dead_letter_exchange: "test_errored_exchange",
       handler_args: [
-        key: "value",
-        or: %{}
       ]
     ],
     [
