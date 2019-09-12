@@ -34,9 +34,8 @@ defmodule Amqpx.Consumer do
   def init(opts) do
     state = struct(__MODULE__, opts)
 
-    with :ok <- Process.send(self(), :setup, []) do
-      {:ok, state}
-    else
+    case Process.send(self(), :setup, []) do
+      :ok -> {:ok, state}
       _ -> {:stop, "ERROR"}
     end
   end

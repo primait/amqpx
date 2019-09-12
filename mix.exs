@@ -5,7 +5,7 @@ defmodule Amqpx.MixProject do
     [
       app: :amqpx,
       name: "amqpx",
-      version: "3.0.5",
+      version: "3.0.6",
       elixir: "~> 1.8",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :production,
@@ -52,7 +52,7 @@ defmodule Amqpx.MixProject do
       {:amqp, "~> 1.1"},
       {:elixir_uuid, "~> 1.1"},
       {:prima_logger_logstash_backend, "~> 1.1.1"},
-      {:credo, "~> 1.0", only: [:dev, :test]},
+      {:credo, "~> 1.1.4", only: [:dev, :test]},
       {:dialyxir, "1.0.0-rc.4", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev},
       {:mock, "~> 0.3.0", only: :test}
