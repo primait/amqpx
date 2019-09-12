@@ -35,9 +35,10 @@ defmodule Amqpx.Producer do
 
   @spec publish(String.t(), String.t(), String.t(), Keyword.t()) :: :ok | :error
   def publish(name, routing_key, payload, options \\ []) do
-    with :ok <- GenServer.call(__MODULE__, {:publish, {name, routing_key, payload, options}}) do
-      :ok
-    else
+    case GenServer.call(__MODULE__, {:publish, {name, routing_key, payload, options}}) do
+      :ok ->
+        :ok
+
       reason ->
         Logger.error("Error during publish: #{inspect(reason)}")
         :error
