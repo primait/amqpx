@@ -16,7 +16,6 @@ config :amqpx,
       routing_keys: ["amqpx.test1"],
       queue_options: [
         durable: true,
-        passive: true,
         arguments: [
           {"x-dead-letter-routing-key", :longstr, "test1_errored"},
           {"x-dead-letter-exchange", :longstr, "test1_errored_exchange"}
