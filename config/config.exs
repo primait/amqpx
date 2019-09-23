@@ -28,45 +28,4 @@ use Mix.Config
 # here (which is why it is important to import them last).
 #
 
-config :amqpx,
-  consumers: [
-    [
-      handler_module: Amqpx.Test.Support.Consumer1,
-      queue: "test",
-      exchange: "amq.topic",
-      exchange_type: :topic,
-      routing_keys: ["amqpx.test"],
-      queue_dead_letter: "test_errored",
-      queue_dead_letter_exchange: "test_errored_exchange",
-      handler_args: []
-    ],
-    [
-      handler_module: Amqpx.Test.Support.Consumer2,
-      queue: "blabla",
-      exchange: "amq.topic",
-      exchange_type: :topic,
-      routing_keys: ["amqpx.bla"],
-      queue_dead_letter: "test_bla"
-    ]
-  ]
-
-config :amqpx, :producer,
-  publisher_confirms: false,
-  exchanges: [
-    [
-      name: "amq.topic",
-      type: :topic
-    ]
-  ]
-
-config :amqpx, :broker,
-  connection_params: [
-    username: "amqpx",
-    password: "amqpx",
-    host: "rabbit",
-    virtual_host: "amqpx",
-    heartbeat: 30,
-    connection_timeout: 10_000
-  ]
-
 import_config "#{Mix.env()}.exs"

@@ -15,7 +15,10 @@ config :amqpx,
       exchange_type: :topic,
       routing_keys: ["amqpx.test1"],
       queue_dead_letter: "test1_errored",
-      queue_dead_letter_exchange: "test1_errored_exchange"
+      queue_dead_letter_exchange: "test1_errored_exchange_aa",
+      queue_options: [
+        durable: true
+      ]
     ],
     [
       handler_module: Amqpx.Test.Support.Consumer2,
@@ -23,7 +26,11 @@ config :amqpx,
       exchange: "topic2",
       exchange_type: :topic,
       routing_keys: ["amqpx.test2"],
-      queue_dead_letter: "test2_errored"
+      queue_dead_letter: "test2_errored",
+      queue_dead_letter_exchange: nil,
+      queue_options: [
+        durable: true
+      ]
     ]
   ]
 

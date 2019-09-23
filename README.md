@@ -40,6 +40,10 @@ config :amqpx,
       handler_args: [ # default: []
           key: "value",
           # or something else
+      ],
+      queue_options: [
+        durable: true
+        # available options: auto_delete, exclusive, passive, no_wait
       ]
     ],
     [
