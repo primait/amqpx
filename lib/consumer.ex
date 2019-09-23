@@ -21,7 +21,9 @@ defmodule Amqpx.Consumer do
     :handler_state,
     queue_dead_letter_exchange: nil,
     handler_args: [],
-    queue_options: []
+    queue_options: [
+      durable: true
+    ]
   ]
 
   @type state() :: %__MODULE__{}
