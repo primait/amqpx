@@ -108,25 +108,6 @@ defmodule Amqpx.Consumer do
     {:ok, %{}}
   end
 
-  defp setup_queue(%__MODULE__{
-         channel: channel,
-         queue: queue,
-         exchange: exchange,
-         exchange_type: exchange_type,
-         routing_keys: routing_keys,
-         queue_options: options
-       }) do
-    {:ok, _} = Queue.declare(channel, queue, options)
-
-    :ok = Exchange.declare(channel, exchange, exchange_type, durable: true)
-
-    Enum.each(routing_keys, fn rk ->
-      :ok = Queue.bind(channel, queue, exchange, routing_key: rk)
-    end)
-
-    {:ok, %{}}
-  end
-
   def handle_info(:setup, state) do
     with {:ok, state} <- broker_connect(state) do
       {:noreply, state}
