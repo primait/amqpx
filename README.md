@@ -10,7 +10,7 @@ Written to prevent duplicated and boilerplate code to handle all the lifecycle o
 ```elixir
 def deps do
   [
-    {:amqpx, "~> 3.0"}
+    {:amqpx, "~> 5.0"}
   ]
 end
 ```
@@ -45,8 +45,15 @@ config :amqpx, :broker,
 
 ### Consumers
 Default parameters:
-- queue_dead_letter_exchange: ""
 - handler_args: []
+- queue_options:
+```elixir
+    queue_options: [
+      durable: true,
+      arguments: []
+    ]
+```
+- arguments (in queue_options): []
 ```elixir
 config :amqpx,
   consumers: [
