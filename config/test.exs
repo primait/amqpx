@@ -14,10 +14,13 @@ config :amqpx,
       exchange: "topic1",
       exchange_type: :topic,
       routing_keys: ["amqpx.test1"],
-      queue_dead_letter: "test1_errored",
-      queue_dead_letter_exchange: "test1_errored_exchange",
       queue_options: [
-        durable: true
+        durable: true,
+        passive: true,
+        arguments: [
+          {"x-dead-letter-routing-key", :longstr, "test1_errored"},
+          {"x-dead-letter-exchange", :longstr, "test1_errored_exchange"}
+        ]
       ]
     ],
     [
@@ -26,10 +29,12 @@ config :amqpx,
       exchange: "topic2",
       exchange_type: :topic,
       routing_keys: ["amqpx.test2"],
-      queue_dead_letter: "test2_errored",
-      queue_dead_letter_exchange: nil,
       queue_options: [
-        durable: true
+        durable: true,
+        arguments: [
+          {"x-dead-letter-routing-key", :longstr, "test2_errored"},
+          {"x-dead-letter-exchange", :longstr, "test2_errored_exchange"}
+        ]
       ]
     ]
   ]
