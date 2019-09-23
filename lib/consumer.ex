@@ -16,11 +16,13 @@ defmodule Amqpx.Consumer do
     :exchange,
     :exchange_type,
     :routing_keys,
-    :queue_dead_letter,
     :handler_module,
     :handler_state,
-    queue_dead_letter_exchange: "",
-    handler_args: []
+    handler_args: [],
+    queue_options: [
+      durable: true,
+      arguments: []
+    ]
   ]
 
   @type state() :: %__MODULE__{}
@@ -82,39 +84,24 @@ defmodule Amqpx.Consumer do
          exchange: exchange,
          exchange_type: exchange_type,
          routing_keys: routing_keys,
-         queue_dead_letter: queue_dead_letter,
-         queue_dead_letter_exchange: queue_dead_letter_exchange
-       })
-       when is_binary(queue_dead_letter) do
-    {:ok, _} = Queue.declare(channel, queue_dead_letter, durable: true)
+         queue_options: options
+       }) do
+    case Enum.find(options[:arguments], &match?({"x-dead-letter-routing-key", _, _}, &1)) do
+      {"x-dead-letter-routing-key", _, queue_dead_letter} ->
+        # Errored queue
+        {:ok, _} = Queue.declare(channel, queue_dead_letter, durable: true)
+
+      nil ->
+        nil
+    end
 
     # Messages that cannot be delivered to any consumer in the main queue will be routed to the error queue
     {:ok, _} =
-      Queue.declare(channel, queue,
-        durable: true,
-        arguments: [
-          {"x-dead-letter-exchange", :longstr, queue_dead_letter_exchange},
-          {"x-dead-letter-routing-key", :longstr, queue_dead_letter}
-        ]
+      Queue.declare(
+        channel,
+        queue,
+        options
       )
-
-    :ok = Exchange.declare(channel, exchange, exchange_type, durable: true)
-
-    Enum.each(routing_keys, fn rk ->
-      :ok = Queue.bind(channel, queue, exchange, routing_key: rk)
-    end)
-
-    {:ok, %{}}
-  end
-
-  defp setup_queue(%__MODULE__{
-         channel: channel,
-         queue: queue,
-         exchange: exchange,
-         exchange_type: exchange_type,
-         routing_keys: routing_keys
-       }) do
-    {:ok, _} = Queue.declare(channel, queue, durable: true)
 
     :ok = Exchange.declare(channel, exchange, exchange_type, durable: true)
 

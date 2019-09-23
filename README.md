@@ -56,10 +56,17 @@ config :amqpx,
       exchange: "amq.topic",
       exchange_type: :topic,
       routing_keys: ["amqpx.test"],
-      queue_dead_letter: "test_errored",
-      queue_dead_letter_exchange: "test_errored_exchange",
       handler_args: [
           key: "value",
+          # or something else
+      ],
+      queue_options: [
+        durable: true,
+        arguments: [
+          {"x-dead-letter-routing-key", :longstr, "test_errored"},
+          {"x-dead-letter-exchange", :longstr, "test_errored_exchange"}
+        ]
+        # available options: auto_delete, exclusive, passive, no_wait
       ]
     ]
   ]
