@@ -20,7 +20,8 @@ defmodule Amqpx.Consumer do
     :handler_state,
     handler_args: [],
     queue_options: [
-      durable: true
+      durable: true,
+      arguments: []
     ]
   ]
 
@@ -85,11 +86,14 @@ defmodule Amqpx.Consumer do
          routing_keys: routing_keys,
          queue_options: options
        }) do
-    {"x-dead-letter-routing-key", _, queue_dead_letter} =
-      Enum.find(options[:arguments], &match?({"x-dead-letter-routing-key", _, _}, &1))
+    case Enum.find(options[:arguments], &match?({"x-dead-letter-routing-key", _, _}, &1)) do
+      {"x-dead-letter-routing-key", _, queue_dead_letter} ->
+        # Errored queue
+        {:ok, _} = Queue.declare(channel, queue_dead_letter, durable: true)
 
-    # Errored queue
-    {:ok, _} = Queue.declare(channel, queue_dead_letter, durable: true)
+      nil ->
+        nil
+    end
 
     # Messages that cannot be delivered to any consumer in the main queue will be routed to the error queue
     {:ok, _} =
