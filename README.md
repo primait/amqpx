@@ -146,7 +146,10 @@ defmodule Application do
   end
 
   def consumers() do
-    Enum.each(Application.get_env(:amqpx, :consumers), & Amqpx.Consumer.start_link(&1))
+    Enum.map(
+      Application.get_env(:amqpx, :consumers),
+      &Supervisor.child_spec({Amqpx.Consumer, &1}, id: UUID.uuid1())
+    )
   end
 
   def producers() do
