@@ -16,45 +16,62 @@ end
 ```
 
 From 3.0.0 AMQPX is no longer an application. This is so the client can choose in which environment or configuration to have consumers up and running.
-You would then need to start your consumers and producer in the client's supervision tree, instead of adding AMQPX to the `extra_application` list as it was in the past:
+You would then need to start your consumers and producer in the client's supervision tree, instead of adding AMQPX to the `extra_application` list as it was in the past.
 
+To start all consumers:
 ```elixir
 Enum.each(Application.get_env(:amqpx, :consumers), & Amqpx.Consumer.start_link(&1))
-Amqpx.Producer.start_link(Application.get_env(:amqpx, :producer))
+```
 
+To start all producers:
+```elixir
+Amqpx.Producer.start_link(Application.get_env(:amqpx, :producer))
 ```
 
 ## Sample configuration
 
+### Broker
+```elixir
+config :amqpx, :broker,
+  connection_params: [
+    username: "amqpx",
+    password: "amqpx",
+    host: "rabbit",
+    virtual_host: "amqpx",
+    heartbeat: 30,
+    connection_timeout: 10_000
+  ]
+```
+
+### Consumers
+Default parameters:
+- queue_dead_letter_exchange: ""
+- handler_args: []
 ```elixir
 config :amqpx,
   consumers: [
     [
-      handler_module: Amqpx.ConsumerModule1,
+      handler_module: Your.Handler.Module,
       queue: "test",
       exchange: "amq.topic",
       exchange_type: :topic,
       routing_keys: ["amqpx.test"],
       queue_dead_letter: "test_errored",
-      queue_dead_letter_exchange: "test_errored_exchange", # default: ""
-      handler_args: [ # default: []
+      queue_dead_letter_exchange: "test_errored_exchange",
+      handler_args: [
           key: "value",
-          # or something else
       ]
-    ],
-    [
-      handler_module: Amqpx.ConsumerModule2,
-      queue: "blabla",
-      exchange: "amq.topic",
-      exchange_type: :topic,
-      routing_keys: ["amqpx.bla"],
-      queue_dead_letter: "test_bla"
     ]
   ]
+```
 
+### Producers
+Default parameters:
+- publish_timeout: 1_000
+```elixir
 config :amqpx, :producer,
   publisher_confirms: true,
-  publish_timeout: 2_000, #default is 1_000
+  publish_timeout: 2_000,
   exchanges: [
     [
       name: "amq.topic",
@@ -65,14 +82,61 @@ config :amqpx, :producer,
       type: :topic
     ]
   ]
+```
 
-config :amqpx, :broker,
-  connection_params: [
-    username: "amqpx",
-    password: "amqpx",
-    host: "rabbit",
-    virtual_host: "amqpx",
-    heartbeat: 30,
-    connection_timeout: 10_000
-  ]
+### Consumer
+```elixir
+defmodule Consumer do
+  @moduledoc nil
+
+  @behaviour Amqpx.Consumer
+
+  def setup(_channel, _args) do
+    {:ok, %{}}
+  end
+
+  def handle_message(_payload, state) do
+    {:ok, state}
+  end
+end
+```
+
+### Producer
+```elixir
+defmodule Producer do
+  @moduledoc nil
+  
+  alias Amqpx.Producer
+
+  @spec send_payload(map) :: :ok | :error
+  def send_payload(payload) do
+    Producer.publish("topic1", "amqpx.test1", Jason.encode!(payload))
+  end
+end
+```
+
+### Application
+Setup consumers and/or producers inside your Application
+```elixir
+defmodule Application do
+  def start(_type, _args) do
+    import Supervisor.Spec
+    children =
+      [
+        producers()
+      ]
+      |> Kernel.++(consumers())
+
+    opts = [strategy: :one_for_one, name: Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+
+  def consumers() do
+    Enum.each(Application.get_env(:amqpx, :consumers), & Amqpx.Consumer.start_link(&1))
+  end
+
+  def producers() do
+    {Amqpx.Producer, Application.get_env(:amqpx, :producer)}
+  end
+end
 ```
