@@ -85,7 +85,9 @@ defmodule Amqpx.Consumer do
          routing_keys: routing_keys,
          queue_options: options
        }) do
-    {"x-dead-letter-routing-key", _, queue_dead_letter} = Enum.find(options[:arguments], &match?({"x-dead-letter-routing-key", _, _},&1))
+    {"x-dead-letter-routing-key", _, queue_dead_letter} =
+      Enum.find(options[:arguments], &match?({"x-dead-letter-routing-key", _, _}, &1))
+
     # Errored queue
     {:ok, _} = Queue.declare(channel, queue_dead_letter, durable: true)
 
