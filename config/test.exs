@@ -19,11 +19,9 @@ config :amqpx,
 config :amqpx,
   consumers: [
     [
-      connection_params: Application.get_env(:amqpx, :connection_params),
       handler_module: Amqpx.Test.Support.Consumer1
     ],
     [
-      connection_params: Application.get_env(:amqpx, :connection_params),
       handler_module: Amqpx.Test.Support.Consumer2
     ]
   ]

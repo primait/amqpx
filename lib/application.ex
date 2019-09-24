@@ -20,13 +20,12 @@ defmodule Amqpx.Application do
   end
 
   def consumers() do
+    IO.inspect Application.get_env(:amqpx, :consumers)
     Enum.map(
       Application.get_env(:amqpx, :consumers),
       &Supervisor.child_spec({Amqpx.Consumer, &1}, id: UUID.uuid1())
     )
   end
-
-  def consumers(_), do: []
 
   def producers() do
     {Amqpx.Producer, Application.get_env(:amqpx, :producer)}

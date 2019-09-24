@@ -27,6 +27,7 @@ defmodule Amqpx.Consumer do
 
   def init(opts) do
     state = struct(__MODULE__, opts)
+    state = %{state | connection_params: Application.get_env( Mix.Project.config()[:app], :connection_params)}
     Process.send(self(), :setup, [])
     {:ok, state}
   end

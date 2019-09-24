@@ -39,6 +39,7 @@ defmodule Amqpx.Producer do
 
   def init(opts) do
     state = struct(__MODULE__, opts)
+    state = %{state | connection_params: Application.get_env( Mix.Project.config()[:app], :connection_params)}
     Process.send(self(), :setup, [])
     {:ok, state}
   end
@@ -48,7 +49,7 @@ defmodule Amqpx.Producer do
       {:noreply, broker_connect(state)}
     rescue
       exception in _ ->
-        Logger.error("Unable to connect to Broker! Retrying with #{backoff}ms backoff",
+        Logger.error("Unable to connect to Broker! Retrying with #{inspect(backoff)}ms backoff",
           error: inspect(exception)
         )
 
@@ -64,7 +65,7 @@ defmodule Amqpx.Producer do
   # def handle_info({:EXIT, _pid, :normal}, state), do: {:noreply, state}
 
   def handle_info(message, state) do
-    Logger.warn("Unknown message reiceived #{inspect(message)}")
+    Logger.warn("Unknown message received #{inspect(message)}")
     {:noreply, state}
   end
 

@@ -25,7 +25,7 @@ defmodule Amqpx.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: []
+      mod: {Amqpx.Application, []}
     ]
   end
 
@@ -55,7 +55,8 @@ defmodule Amqpx.MixProject do
       {:credo, "~> 1.0", only: [:dev, :test]},
       {:dialyxir, "1.0.0-rc.6", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev},
-      {:mock, "~> 0.3.0", only: :test}
+      {:mock, "~> 0.3.0", only: :test},
+      {:distillery, "~> 2.0.14"}
     ]
   end
 
