@@ -7,24 +7,14 @@ defmodule Amqpx.Producer do
   use AMQP
   alias AMQP.Channel
 
-  @backoff 5_000
-
-  @type exchange() :: %{
-          name: String.t(),
-          type: String.t()
-        }
-  @type state() :: %{
-          channel: Connection.t(),
-          publisher_confirms: boolean,
-          publish_timeout: integer,
-          exchanges: list(exchange())
-        }
+  @type state() :: %__MODULE__{}
 
   defstruct [
+    :connection_params,
     :channel,
     :publisher_confirms,
-    :exchanges,
-    publish_timeout: 1_000
+    publish_timeout: 1_000,
+    backoff: 5_000
   ]
 
   # Public API
@@ -49,29 +39,32 @@ defmodule Amqpx.Producer do
 
   def init(opts) do
     state = struct(__MODULE__, opts)
-
-    # Can't return anything else but :ok when sending to self()
     Process.send(self(), :setup, [])
-
     {:ok, state}
   end
 
-  def handle_info(:setup, state) do
-    with {:ok, state} <- broker_connect(state) do
-      {:noreply, state}
+  def handle_info(:setup, %{backoff: backoff} = state) do
+    try do
+      {:noreply, broker_connect(state)}
+    rescue
+      exception in _ ->
+        Logger.error("Unable to connect to Broker! Retrying with #{backoff}ms backoff",
+          error: inspect(exception)
+        )
+
+        :timer.sleep(backoff)
+        {:stop, exception, state}
     end
   end
 
-  def handle_info({:DOWN, _, :process, _pid, _reason}, state) do
-    with {:ok, state} <- broker_connect(state) do
-      {:noreply, state}
-    end
+  def handle_info({:DOWN, _, :process, _pid, reason}, state) do
+    {:stop, {:DOWN, reason}, state}
   end
 
-  def handle_info({:EXIT, _pid, :normal}, state), do: {:noreply, state}
+  # def handle_info({:EXIT, _pid, :normal}, state), do: {:noreply, state}
 
   def handle_info(message, state) do
-    Logger.warn("Ricevuto messaggio sconosciuto #{inspect(message)}")
+    Logger.warn("Unknown message reiceived #{inspect(message)}")
     {:noreply, state}
   end
 
@@ -114,10 +107,10 @@ defmodule Amqpx.Producer do
     end
   end
 
-  def terminate(_, %{channel: channel}) do
-    with %Channel{pid: pid} <- channel do
+  def terminate(_, %__MODULE__{channel: channel}) do
+    with %Channel{conn: %Connection{pid: pid} = conn} <- channel do
       if Process.alive?(pid) do
-        Channel.close(channel)
+        Connection.close(conn)
       end
     end
   end
@@ -132,27 +125,19 @@ defmodule Amqpx.Producer do
   end
 
   @spec broker_connect(state()) :: {:ok, state()}
-  defp broker_connect(%{exchanges: exchanges, publisher_confirms: publisher_confirms} = state) do
-    case Connection.open(Application.get_env(:amqpx, :broker)[:connection_params]) do
-      {:ok, connection} ->
-        Process.monitor(connection.pid)
-        {:ok, channel} = Channel.open(connection)
-        state = %{state | channel: channel}
+  defp broker_connect(
+         %{publisher_confirms: publisher_confirms, connection_params: connection_params} = state
+       ) do
+    {:ok, connection} = Connection.open(connection_params)
+    Process.monitor(connection.pid)
 
-        if publisher_confirms do
-          Confirm.select(channel)
-        end
+    {:ok, channel} = Channel.open(connection)
+    state = %{state | channel: channel}
 
-        Enum.each(exchanges, fn [name: name, type: type] ->
-          :ok = Exchange.declare(channel, name, type, durable: true)
-        end)
-
-        {:ok, state}
-
-      {:error, _} ->
-        # Reconnection loop
-        Logger.error("Unable to connect to Broker! Retrying with #{@backoff}ms backoff")
-        Process.send_after(self(), :setup, @backoff)
+    if publisher_confirms do
+      Confirm.select(channel)
     end
+
+    state
   end
 end

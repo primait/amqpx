@@ -1,6 +1,5 @@
 defmodule Amqpx.Test.AmqpxTest do
   use ExUnit.Case
-  use Amqpx.RabbitCase
   alias Amqpx.Test.Support.{Consumer1, Consumer2, Producer1, Producer2}
 
   import Mock

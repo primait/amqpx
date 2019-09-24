@@ -7,51 +7,6 @@ config :logger, :console,
 config :logger, level: :warning
 
 config :amqpx,
-  consumers: [
-    [
-      handler_module: Amqpx.Test.Support.Consumer1,
-      queue: "test1",
-      exchange: "topic1",
-      exchange_type: :topic,
-      routing_keys: ["amqpx.test1"],
-      queue_options: [
-        durable: true,
-        arguments: [
-          {"x-dead-letter-routing-key", :longstr, "test1_errored"},
-          {"x-dead-letter-exchange", :longstr, "test1_errored_exchange"}
-        ]
-      ]
-    ],
-    [
-      handler_module: Amqpx.Test.Support.Consumer2,
-      queue: "test2",
-      exchange: "topic2",
-      exchange_type: :topic,
-      routing_keys: ["amqpx.test2"],
-      queue_options: [
-        durable: true,
-        arguments: [
-          {"x-dead-letter-routing-key", :longstr, "test2_errored"},
-          {"x-dead-letter-exchange", :longstr, "test2_errored_exchange"}
-        ]
-      ]
-    ]
-  ]
-
-config :amqpx, :producer,
-  publisher_confirms: false,
-  exchanges: [
-    [
-      name: "topic1",
-      type: :topic
-    ],
-    [
-      name: "topic2",
-      type: :topic
-    ]
-  ]
-
-config :amqpx, :broker,
   connection_params: [
     username: "amqpx",
     password: "amqpx",
@@ -59,4 +14,61 @@ config :amqpx, :broker,
     virtual_host: "amqpx",
     heartbeat: 30,
     connection_timeout: 10_000
+  ]
+
+config :amqpx,
+  consumers: [
+    [
+      connection_params: Application.get_env(:amqpx, :connection_params),
+      handler_module: Amqpx.Test.Support.Consumer1
+    ],
+    [
+      connection_params: Application.get_env(:amqpx, :connection_params),
+      handler_module: Amqpx.Test.Support.Consumer2
+    ]
+  ]
+
+config :amqpx, Amqpx.Test.Support.Consumer1, %{
+  name: "test1",
+  exchanges: [
+    %{name: "topic1", type: "topic", routing_keys: ["amqpx.test1"], opts: [durable: true]}
+  ],
+  opts: [
+    durable: true,
+    arguments: [
+      {"x-dead-letter-routing-key", :longstr, "test1_errored"},
+      {"x-dead-letter-exchange", :longstr, "test1_errored_exchange"}
+    ]
+  ]
+}
+
+config :amqpx, Amqpx.Test.Support.Consumer2, %{
+  name: "test2",
+  exchanges: [
+    %{name: "topic2", type: "topic", routing_keys: ["amqpx.test2"], opts: [durable: true]}
+  ],
+  opts: [
+    durable: true,
+    arguments: [
+      {"x-dead-letter-exchange", :longstr, "test2_errored_exchange"}
+    ]
+  ]
+}
+
+config :amqpx, :producer,
+  connection_params: Application.get_env(:amqpx, :broker)[:connection_params],
+  publisher_confirms: false
+
+config :amqpx, Amqpx.Producer,
+  exchanges: [
+    [
+      name: "topic1",
+      type: :topic,
+      routing_keys: []
+    ],
+    [
+      name: "topic2",
+      type: :topic,
+      routing_keys: []
+    ]
   ]
