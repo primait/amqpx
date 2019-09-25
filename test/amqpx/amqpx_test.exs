@@ -27,10 +27,10 @@ defmodule Amqpx.Test.AmqpxTest do
   test "e2e: should publish message and consume it" do
     payload = %{test: 1}
 
-    with_mock(Consumer1, handle_message: fn _, s -> {:ok, s} end) do
+    with_mock(Consumer1, handle_message: fn _, _, s -> {:ok, s} end) do
       Producer1.send_payload(payload)
       :timer.sleep(50)
-      assert_called(Consumer1.handle_message(Jason.encode!(payload), :_))
+      assert_called(Consumer1.handle_message(Jason.encode!(payload), :_, :_))
     end
   end
 
@@ -38,17 +38,17 @@ defmodule Amqpx.Test.AmqpxTest do
     payload = %{test: 1}
     payload2 = %{test: 2}
 
-    with_mock(Consumer1, handle_message: fn _, s -> {:ok, s} end) do
-      with_mock(Consumer2, handle_message: fn _, s -> {:ok, s} end) do
+    with_mock(Consumer1, handle_message: fn _, _, s -> {:ok, s} end) do
+      with_mock(Consumer2, handle_message: fn _, _, s -> {:ok, s} end) do
         Producer1.send_payload(payload)
         :timer.sleep(50)
-        assert_called(Consumer1.handle_message(Jason.encode!(payload), :_))
-        refute called(Consumer2.handle_message(Jason.encode!(payload), :_))
+        assert_called(Consumer1.handle_message(Jason.encode!(payload), :_, :_))
+        refute called(Consumer2.handle_message(Jason.encode!(payload), :_, :_))
 
         Producer2.send_payload(payload2)
         :timer.sleep(50)
-        assert_called(Consumer2.handle_message(Jason.encode!(payload2), :_))
-        refute called(Consumer1.handle_message(Jason.encode!(payload2), :_))
+        assert_called(Consumer2.handle_message(Jason.encode!(payload2), :_, :_))
+        refute called(Consumer1.handle_message(Jason.encode!(payload2), :_, :_))
       end
     end
   end
