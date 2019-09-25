@@ -98,14 +98,11 @@ defmodule Amqpx.Consumer do
 
     {:ok, channel} = Channel.open(connection)
     state = %{state | channel: channel}
-    # {:ok, _} = setup_queue(state) da spostare nel setup
 
     {:ok, handler_state} = handler_module.setup(channel)
     state = %{state | handler_state: handler_state}
 
     Basic.qos(channel, prefetch_count: prefetch_count)
-
-    # {:ok, _consumer_tag} = Basic.consume(channel, queue) da spostare nel setup
 
     state
   end
