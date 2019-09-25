@@ -10,13 +10,13 @@ defmodule Amqpx.Application do
   # for more information on OTP Applications
   def start(_type, _args) do
     children =
-      [
-        Helper.producer_supervisor_configuration(
-          Application.get_env(:amqpx, :producer),
-          Application.get_env(:amqpx, :connection_params)
-        )
-      ]
-      |> Kernel.++(
+      Enum.concat(
+        [
+          Helper.producer_supervisor_configuration(
+            Application.get_env(:amqpx, :producer),
+            Application.get_env(:amqpx, :connection_params)
+          )
+        ],
         Helper.consumers_supervisor_configuration(
           Application.get_env(:amqpx, :consumers),
           Application.get_env(:amqpx, :connection_params)
