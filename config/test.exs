@@ -4,7 +4,7 @@ config :logger, :console,
   format: "[$level] $message $metadata\n",
   metadata: [:error, :error_message]
 
-config :logger, level: :warn
+config :logger, level: :info
 
 config :amqpx,
   connection_params: [
@@ -31,7 +31,7 @@ config :amqpx,
   ]
 
 config :amqpx, Amqpx.Test.Support.Consumer1, %{
-  name: "test1",
+  queue: "test1",
   exchanges: [
     %{name: "topic1", type: :topic, routing_keys: ["amqpx.test1"], opts: [durable: true]}
   ],
@@ -45,7 +45,7 @@ config :amqpx, Amqpx.Test.Support.Consumer1, %{
 }
 
 config :amqpx, Amqpx.Test.Support.Consumer2, %{
-  name: "test2",
+  queue: "test2",
   exchanges: [
     %{name: "topic2", type: :topic, routing_keys: ["amqpx.test2"], opts: [durable: true]}
   ],
@@ -58,7 +58,7 @@ config :amqpx, Amqpx.Test.Support.Consumer2, %{
 }
 
 config :amqpx, Amqpx.Test.Support.Consumer3, %{
-  name: "test3",
+  queue: "test3",
   exchanges: [
     %{name: "topic3", type: :fanout, opts: [durable: true]}
   ]

@@ -22,7 +22,7 @@ defmodule Amqpx.Helper do
   def declare_queue(
         channel,
         %{
-          name: name,
+          queue: qname,
           opts: opts
         } = queue
       ) do
@@ -31,13 +31,13 @@ defmodule Amqpx.Helper do
         case Enum.find(opts[:arguments], &match?({"x-dead-letter-routing-key", _, _}, &1)) do
           {_, _, dlrk} ->
             setup_dead_lettering(channel, %{
-              queue: "#{name}_errored",
+              queue: "#{qname}_errored",
               exchange: dle,
               routing_key: dlrk
             })
 
           nil ->
-            setup_dead_lettering(channel, %{queue: "#{name}_errored", exchange: dle})
+            setup_dead_lettering(channel, %{queue: "#{qname}_errored", exchange: dle})
         end
 
       nil ->
@@ -67,22 +67,22 @@ defmodule Amqpx.Helper do
   end
 
   defp setup_queue(channel, %{
-         name: qname,
+         queue: queue,
          exchanges: exchanges,
          opts: opts
        }) do
-    {:ok, _} = Queue.declare(channel, qname, opts)
+    {:ok, _} = Queue.declare(channel, queue, opts)
 
-    Enum.each(exchanges, &setup_exchange(channel, qname, &1))
+    Enum.each(exchanges, &setup_exchange(channel, queue, &1))
   end
 
   defp setup_queue(channel, %{
-         name: qname,
+         queue: queue,
          exchanges: exchanges
        }) do
-    {:ok, _} = Queue.declare(channel, qname)
+    {:ok, _} = Queue.declare(channel, queue)
 
-    Enum.each(exchanges, &setup_exchange(channel, qname, &1))
+    Enum.each(exchanges, &setup_exchange(channel, queue, &1))
   end
 
   defp setup_exchange(channel, queue, %{

@@ -6,7 +6,7 @@ defmodule Amqpx.Test.Support.Consumer2 do
   alias Amqpx.Helper
 
   @config Application.get_env(:amqpx, __MODULE__)
-  @queue Application.get_env(:amqpx, __MODULE__)[:name]
+  @queue Application.get_env(:amqpx, __MODULE__)[:queue]
 
   def setup(channel) do
     Helper.declare_queue(channel, @config)
