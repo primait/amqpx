@@ -4,7 +4,7 @@ config :logger, :console,
   format: "[$level] $message $metadata\n",
   metadata: [:error, :error_message]
 
-config :logger, level: :info
+config :logger, level: :warn
 
 config :amqpx,
   connection_params: [

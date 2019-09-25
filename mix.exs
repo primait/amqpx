@@ -51,8 +51,8 @@ defmodule Amqpx.MixProject do
       {:amqp, "~> 1.1"},
       {:elixir_uuid, "~> 1.1"},
       {:prima_logger_logstash_backend, "~> 1.1.1"},
-      {:credo, "~> 1.0", only: [:dev, :test]},
-      {:dialyxir, "1.0.0-rc.6", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.1.4", only: [:dev, :test]},
+      {:dialyxir, "1.0.0-rc.7", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev},
       {:mock, "~> 0.3.0", only: :test}
     ]
