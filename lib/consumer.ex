@@ -4,8 +4,7 @@ defmodule Amqpx.Consumer do
   """
   require Logger
   use GenServer
-  use AMQP
-  alias AMQP.Channel
+  alias AMQP.{Connection, Channel, Basic}
 
   defstruct [
     :connection_params,
@@ -27,44 +26,9 @@ defmodule Amqpx.Consumer do
 
   def init(opts) do
     state = struct(__MODULE__, opts)
-    state = %{state | connection_params: Application.get_env( Mix.Project.config()[:app], :connection_params)}
     Process.send(self(), :setup, [])
     {:ok, state}
   end
-
-  # defp setup_queue(%__MODULE__{
-  #        channel: channel,
-  #        queue: queue,
-  #        exchange: exchange,
-  #        exchange_type: exchange_type,
-  #        routing_keys: routing_keys,
-  #        queue_options: options
-  #      }) do
-  #   case Enum.find(options[:arguments], &match?({"x-dead-letter-routing-key", _, _}, &1)) do
-  #     {"x-dead-letter-routing-key", _, queue_dead_letter} ->
-  #       # Errored queue
-  #       {:ok, _} = Queue.declare(channel, queue_dead_letter, durable: true)
-  #
-  #     nil ->
-  #       nil
-  #   end
-  #
-  #   # Messages that cannot be delivered to any consumer in the main queue will be routed to the error queue
-  #   {:ok, _} =
-  #     Queue.declare(
-  #       channel,
-  #       queue,
-  #       options
-  #     )
-  #
-  #   :ok = Exchange.declare(channel, exchange, exchange_type, durable: true)
-  #
-  #   Enum.each(routing_keys, fn rk ->
-  #     :ok = Queue.bind(channel, queue, exchange, routing_key: rk)
-  #   end)
-  #
-  #   {:ok, %{}}
-  # end
 
   def handle_info(:setup, %{backoff: backoff} = state) do
     try do
@@ -87,7 +51,7 @@ defmodule Amqpx.Consumer do
 
   # Sent by the broker when the consumer is unexpectedly cancelled (such as after a queue deletion)
   def handle_info({:basic_cancel, %{consumer_tag: _consumer_tag}}, state) do
-    {:noreply, state}
+    {:stop, :basic_cancel, state}
   end
 
   # Confirmation sent by the broker to the consumer process after a Basic.cancel
@@ -106,7 +70,7 @@ defmodule Amqpx.Consumer do
     {:stop, {:DOWN, reason}, state}
   end
 
-  # def handle_info({:EXIT, _pid, :normal}, state), do: {:noreply, state}
+  def handle_info({:EXIT, _pid, :normal}, state), do: {:stop, :EXIT, state}
 
   def handle_info(message, state) do
     Logger.warn("Unknown message reiceived #{inspect(message)}")

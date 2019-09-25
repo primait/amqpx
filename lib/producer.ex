@@ -4,8 +4,7 @@ defmodule Amqpx.Producer do
   """
   require Logger
   use GenServer
-  use AMQP
-  alias AMQP.Channel
+  alias AMQP.{Connection, Channel, Basic, Confirm}
 
   @type state() :: %__MODULE__{}
 
@@ -39,7 +38,6 @@ defmodule Amqpx.Producer do
 
   def init(opts) do
     state = struct(__MODULE__, opts)
-    state = %{state | connection_params: Application.get_env( Mix.Project.config()[:app], :connection_params)}
     Process.send(self(), :setup, [])
     {:ok, state}
   end
