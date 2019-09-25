@@ -24,13 +24,9 @@ defmodule Amqpx.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger],
-      mod: applications(Mix.env())
+      extra_applications: [:logger]
     ]
   end
-
-  defp applications(:test), do: {Amqpx.Application, []}
-  defp applications(_), do: []
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(:dev), do: ["lib", "test/support"]

@@ -1,8 +1,28 @@
 defmodule Amqpx.Test.AmqpxTest do
   use ExUnit.Case
   alias Amqpx.Test.Support.{Consumer1, Consumer2, Producer1, Producer2}
-
+  alias Amqpx.Helper
   import Mock
+
+  setup_all do
+    {_, producer} =
+      Helper.producer_supervisor_configuration(
+        Application.get_env(:amqpx, :producer),
+        Application.get_env(:amqpx, :connection_params)
+      )
+
+    Amqpx.Producer.start_link(producer)
+
+    Enum.each(
+      Application.get_env(:amqpx, :consumers),
+      &Amqpx.Consumer.start_link(
+        Map.put(&1, :connection_params, Application.get_env(:amqpx, :connection_params))
+      )
+    )
+
+    :timer.sleep(1_000)
+    :ok
+  end
 
   test "e2e: should publish message and consume it" do
     payload = %{test: 1}
