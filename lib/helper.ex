@@ -1,4 +1,8 @@
 defmodule Amqpx.Helper do
+  @moduledoc """
+  Helper functions
+  """
+
   alias AMQP.{Exchange, Queue}
 
   def consumers_supervisor_configuration(handlers_conf, connection_params) do
@@ -56,10 +60,6 @@ defmodule Amqpx.Helper do
   defp setup_dead_lettering(channel, %{queue: dlq, exchange: exchange}) do
     Exchange.declare(channel, exchange, :topic, durable: true)
     Queue.declare(channel, dlq, durable: true)
-  end
-
-  defp setup_dead_lettering(_channel, conf) do
-    raise "Unhandled dead letter configuration #{inspect(conf)}"
   end
 
   defp setup_queue(channel, %{

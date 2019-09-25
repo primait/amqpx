@@ -85,7 +85,7 @@ defmodule Amqpx.Consumer do
     end
   end
 
-  @spec broker_connect(state()) :: {:ok, state()}
+  @spec broker_connect(state()) :: state()
   defp broker_connect(
          %__MODULE__{
            connection_params: connection_params,

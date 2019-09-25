@@ -123,7 +123,7 @@ defmodule Amqpx.Producer do
     Confirm.wait_for_confirms(channel, timeout)
   end
 
-  @spec broker_connect(state()) :: {:ok, state()}
+  @spec broker_connect(state()) :: state()
   defp broker_connect(
          %{publisher_confirms: publisher_confirms, connection_params: connection_params} = state
        ) do
