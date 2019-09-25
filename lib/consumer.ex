@@ -18,7 +18,7 @@ defmodule Amqpx.Consumer do
   @type state() :: %__MODULE__{}
 
   @callback setup(Channel.t()) :: {:ok, map()} | {:error, any()}
-  @callback handle_message(any(), map()) :: {:ok, map()} | {:error, any()}
+  @callback handle_message(any(), map(), map()) :: {:ok, map()} | {:error, any()}
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts)
@@ -60,10 +60,10 @@ defmodule Amqpx.Consumer do
   end
 
   def handle_info(
-        {:basic_deliver, payload, %{delivery_tag: tag, redelivered: redelivered}},
+        {:basic_deliver, payload, meta},
         state
       ) do
-    {:noreply, handle_message(payload, tag, redelivered, state)}
+    {:noreply, handle_message(payload, meta, state)}
   end
 
   def handle_info({:DOWN, _, :process, _pid, reason}, state) do
@@ -73,7 +73,7 @@ defmodule Amqpx.Consumer do
   def handle_info({:EXIT, _pid, :normal}, state), do: {:stop, :EXIT, state}
 
   def handle_info(message, state) do
-    Logger.warn("Unknown message reiceived #{inspect(message)}")
+    Logger.warn("Unknown message received #{inspect(message)}")
     {:noreply, state}
   end
 
@@ -109,8 +109,7 @@ defmodule Amqpx.Consumer do
 
   defp handle_message(
          message,
-         tag,
-         redelivered,
+         %{delivery_tag: tag, redelivered: redelivered} = meta,
          %__MODULE__{
            handler_module: handler_module,
            handler_state: handler_state,
@@ -118,7 +117,7 @@ defmodule Amqpx.Consumer do
          } = state
        ) do
     try do
-      {:ok, handler_state} = handler_module.handle_message(message, handler_state)
+      {:ok, handler_state} = handler_module.handle_message(message, meta, handler_state)
       Basic.ack(state.channel, tag)
       %{state | handler_state: handler_state}
     rescue
