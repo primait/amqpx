@@ -18,14 +18,49 @@ end
 From 3.0.0 AMQPX is no longer an application. This is so the client can choose in which environment or configuration to have consumers up and running.
 You would then need to start your consumers and producer in the client's supervision tree, instead of adding AMQPX to the `extra_application` list as it was in the past.
 
-To start all consumers:
+To start all consumers and producer inside your application, using the library helper function:
 ```elixir
-Enum.each(Application.get_env(:amqpx, :consumers), & Amqpx.Consumer.start_link(&1))
+defmodule Application do
+  alias Amqpx.Helper
+  import Supervisor.Spec, warn: false
+
+  def start(_type, _args) do
+
+    children =
+      Enum.concat(
+        [
+          Helper.producer_supervisor_configuration(
+            Application.get_env(:myapp, :myproducer),
+            Application.get_env(:myapp, :amqp_connection)
+          )
+        ],
+        Helper.consumers_supervisor_configuration(
+          Application.get_env(:myapp, :consumers),
+          Application.get_env(:myapp, :amqp_connection)
+        )
+      )
+    opts = [strategy: :one_for_one, name: Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+end
 ```
 
-To start all producers:
+Start consumers and producer manually:
 ```elixir
-Amqpx.Producer.start_link(Application.get_env(:amqpx, :producer))
+{_, producer} =
+  Helper.producer_supervisor_configuration(
+    Application.get_env(:myapp, :producer),
+    Application.get_env(:myapp, :amqp_connection)
+  )
+
+Amqpx.Producer.start_link(producer)
+
+Enum.each(
+  Application.get_env(:myapp, :consumers),
+  &Amqpx.Consumer.start_link(
+    Map.put(&1, :connection_params, Application.get_env(:myapp, :amqp_connection))
+  )
+)
 ```
 
 ## Sample configuration
@@ -119,7 +154,7 @@ end
 ```elixir
 defmodule Producer do
   @moduledoc nil
-  
+
   alias Amqpx.Producer
 
   @spec send_payload(map) :: :ok | :error
