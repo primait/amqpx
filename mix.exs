@@ -25,12 +25,12 @@ defmodule Amqpx.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: applications(Mix.env),
+      mod: applications(Mix.env())
     ]
   end
 
   defp applications(:test), do: {Amqpx.Application, []}
-  defp applications(_),     do: []
+  defp applications(_), do: []
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(:dev), do: ["lib", "test/support"]
