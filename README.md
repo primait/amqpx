@@ -65,9 +65,9 @@ Enum.each(
 
 ## Sample configuration
 
-### Broker
+### Connection
 ```elixir
-config :amqpx, :broker,
+config :myapp, :amqp_connection,
   connection_params: [
     username: "amqpx",
     password: "amqpx",
@@ -80,43 +80,44 @@ config :amqpx, :broker,
 
 ### Consumers
 Default parameters:
-- handler_args: []
-- queue_options:
+- prefetch_count: 50
+- backoff: 5_000 (connection retry)
+
+N.B: headers exchange declaration not supported by library helpers functions
+
 ```elixir
-    queue_options: [
-      durable: true,
-      arguments: []
-    ]
-```
-- arguments (in queue_options): []
-```elixir
-config :amqpx,
+config :myapp,
   consumers: [
-    [
+    %{
       handler_module: Your.Handler.Module,
-      queue: "test",
-      exchange: "amq.topic",
-      exchange_type: :topic,
-      routing_keys: ["amqpx.test"],
-      handler_args: [
-          key: "value",
-          # or something else
-      ],
-      queue_options: [
-        durable: true,
-        arguments: [
-          {"x-dead-letter-routing-key", :longstr, "test_errored"},
-          {"x-dead-letter-exchange", :longstr, "test_errored_exchange"}
-        ]
-        # available options: auto_delete, exclusive, passive, no_wait
+      prefetch_count: 100,
+      backoff: 10_00
+    }
+
+config :myapp, Your.Handler.Module, %{
+    name: "my_queue",
+    exchanges: [
+      %{name: "amq.topic", type: :topic, routing_keys: ["my.routing_key1","my.routing_key2"], opts: [durable: true]},
+      %{name: "my_exchange", type: :direct, routing_keys: ["my_queue"]},
+      %{name: "my_exchange_fanout", type: :fanout, opts: [durable: true]}
+    ],
+    opts: [
+      durable: true,
+      arguments: [
+        {"x-dead-letter-routing-key", :longstr, "my_queue_errored"},
+        {"x-dead-letter-exchange", :longstr, ""}
       ]
     ]
-  ]
+  }      
 ```
 
 ### Producers
 Default parameters:
 - publish_timeout: 1_000
+- backoff: 5_000 (connection retry)
+
+
+: 
 ```elixir
 config :amqpx, :producer,
   publisher_confirms: true,
