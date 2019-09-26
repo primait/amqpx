@@ -10,7 +10,7 @@ Written to prevent duplicated and boilerplate code to handle all the lifecycle o
 ```elixir
 def deps do
   [
-    {:amqpx, "~> 5.0"}
+    {:amqpx, "~> 5.1"}
   ]
 end
 ```
