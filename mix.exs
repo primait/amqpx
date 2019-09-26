@@ -5,8 +5,8 @@ defmodule Amqpx.MixProject do
     [
       app: :amqpx,
       name: "amqpx",
-      version: "5.0.1",
-      elixir: "~> 1.8",
+      version: "5.1.0",
+      elixir: "~> 1.7",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :production,
       deps: deps(),
@@ -24,8 +24,7 @@ defmodule Amqpx.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger],
-      mod: []
+      extra_applications: [:logger]
     ]
   end
 
@@ -52,7 +51,7 @@ defmodule Amqpx.MixProject do
       {:amqp, "~> 1.1"},
       {:elixir_uuid, "~> 1.1"},
       {:prima_logger_logstash_backend, "~> 1.1.1"},
-      {:credo, "~> 1.0", only: [:dev, :test]},
+      {:credo, "~> 1.1.4", only: [:dev, :test]},
       {:dialyxir, "1.0.0-rc.7", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev},
       {:mock, "~> 0.3.0", only: :test}

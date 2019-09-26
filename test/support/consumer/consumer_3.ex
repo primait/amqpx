@@ -1,4 +1,4 @@
-defmodule Amqpx.Test.Support.Consumer1 do
+defmodule Amqpx.Test.Support.Consumer3 do
   @moduledoc nil
   @behaviour Amqpx.Consumer
 

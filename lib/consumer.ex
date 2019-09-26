@@ -4,31 +4,21 @@ defmodule Amqpx.Consumer do
   """
   require Logger
   use GenServer
-  use AMQP
-  alias AMQP.Channel
-
-  @default_prefetch_count 50
-  @backoff 5_000
+  alias AMQP.{Connection, Channel, Basic}
 
   defstruct [
+    :connection_params,
     :channel,
-    :queue,
-    :exchange,
-    :exchange_type,
-    :routing_keys,
     :handler_module,
     :handler_state,
-    handler_args: [],
-    queue_options: [
-      durable: true,
-      arguments: []
-    ]
+    prefetch_count: 50,
+    backoff: 5_000
   ]
 
   @type state() :: %__MODULE__{}
 
-  @callback setup(Channel.t(), any()) :: {:ok, map()} | {:error, any()}
-  @callback handle_message(any(), map()) :: {:ok, map()} | {:error, any()}
+  @callback setup(Channel.t()) :: {:ok, map()} | {:error, any()}
+  @callback handle_message(any(), map(), map()) :: {:ok, map()} | {:error, any()}
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts)
@@ -36,85 +26,21 @@ defmodule Amqpx.Consumer do
 
   def init(opts) do
     state = struct(__MODULE__, opts)
-
-    case Process.send(self(), :setup, []) do
-      :ok ->
-        {:ok, state}
-
-      _ ->
-        {:stop, "ERROR"}
-    end
+    Process.send(self(), :setup, [])
+    {:ok, state}
   end
 
-  @spec broker_connect(state()) :: {:ok, state()}
-  defp broker_connect(
-         %__MODULE__{handler_module: handler_module, queue: queue, handler_args: handler_args} =
-           state
-       ) do
-    case Connection.open(Application.get_env(:amqpx, :broker)[:connection_params]) do
-      {:ok, connection} ->
-        Process.monitor(connection.pid)
-        {:ok, channel} = Channel.open(connection)
-
-        state = %{state | channel: channel}
-        {:ok, _} = setup_queue(state)
-
-        {:ok, handler_state} = handler_module.setup(channel, handler_args)
-        state = %{state | handler_state: handler_state}
-
-        Basic.qos(channel,
-          prefetch_count: Map.get(state, :prefetch_count, @default_prefetch_count)
+  def handle_info(:setup, %{backoff: backoff} = state) do
+    try do
+      {:noreply, broker_connect(state)}
+    rescue
+      exception in _ ->
+        Logger.error("Unable to connect to Broker! Retrying with #{backoff}ms backoff",
+          error: inspect(exception)
         )
 
-        {:ok, _consumer_tag} = Basic.consume(channel, queue)
-
-        {:ok, state}
-
-      {:error, _} ->
-        # Reconnection loop
-        Logger.error("Unable to connect to Broker! Retrying with #{@backoff}ms backoff")
-        :timer.sleep(@backoff)
-        broker_connect(state)
-    end
-  end
-
-  defp setup_queue(%__MODULE__{
-         channel: channel,
-         queue: queue,
-         exchange: exchange,
-         exchange_type: exchange_type,
-         routing_keys: routing_keys,
-         queue_options: options
-       }) do
-    case Enum.find(options[:arguments], &match?({"x-dead-letter-routing-key", _, _}, &1)) do
-      {"x-dead-letter-routing-key", _, queue_dead_letter} ->
-        # Errored queue
-        {:ok, _} = Queue.declare(channel, queue_dead_letter, durable: true)
-
-      nil ->
-        nil
-    end
-
-    # Messages that cannot be delivered to any consumer in the main queue will be routed to the error queue
-    {:ok, _} =
-      Queue.declare(
-        channel,
-        queue,
-        options
-      )
-
-    :ok = Exchange.declare(channel, exchange, exchange_type, durable: true)
-
-    Enum.each(routing_keys, fn rk ->
-      :ok = Queue.bind(channel, queue, exchange, routing_key: rk)
-    end)
-
-    {:ok, %{}}
-  end
-
-  def handle_info(:setup, state) do
-    with {:ok, state} <- broker_connect(state) do
-      {:noreply, state}
+        :timer.sleep(backoff)
+        {:stop, exception, state}
     end
   end
 
@@ -130,47 +56,68 @@ defmodule Amqpx.Consumer do
 
   # Confirmation sent by the broker to the consumer process after a Basic.cancel
   def handle_info({:basic_cancel_ok, %{consumer_tag: _consumer_tag}}, state) do
-    {:noreply, state}
+    {:stop, :basic_cancel, state}
   end
 
   def handle_info(
-        {:basic_deliver, payload, %{delivery_tag: tag, redelivered: redelivered}},
+        {:basic_deliver, payload, meta},
         state
       ) do
-    {:noreply, handle_message(payload, tag, redelivered, state)}
-
-    {:noreply, state}
+    {:noreply, handle_message(payload, meta, state)}
   end
 
-  def handle_info({:DOWN, _, :process, _pid, _reason}, state) do
-    with {:ok, state} <- broker_connect(state) do
-      {:noreply, state}
-    end
+  def handle_info({:DOWN, _, :process, _pid, reason}, state) do
+    {:stop, {:DOWN, reason}, state}
   end
 
-  def handle_info({:EXIT, _pid, :normal}, state), do: {:noreply, state}
+  def handle_info({:EXIT, _pid, :normal}, state), do: {:stop, :EXIT, state}
 
   def handle_info(message, state) do
-    Logger.warn("Unknown message reiceived #{inspect(message)}")
+    Logger.warn("Unknown message received #{inspect(message)}")
     {:noreply, state}
   end
 
   def terminate(_, %__MODULE__{channel: channel}) do
-    with %Channel{pid: pid} <- channel do
+    with %Channel{conn: %Connection{pid: pid} = conn} <- channel do
       if Process.alive?(pid) do
-        Channel.close(channel)
+        Connection.close(conn)
       end
     end
   end
 
+  @spec broker_connect(state()) :: state()
+  defp broker_connect(
+         %__MODULE__{
+           connection_params: connection_params,
+           handler_module: handler_module,
+           prefetch_count: prefetch_count
+         } = state
+       ) do
+    {:ok, connection} = Connection.open(connection_params)
+    Process.monitor(connection.pid)
+
+    {:ok, channel} = Channel.open(connection)
+    state = %{state | channel: channel}
+
+    {:ok, handler_state} = handler_module.setup(channel)
+    state = %{state | handler_state: handler_state}
+
+    Basic.qos(channel, prefetch_count: prefetch_count)
+
+    state
+  end
+
   defp handle_message(
          message,
-         tag,
-         redelivered,
-         %__MODULE__{handler_module: handler_module, handler_state: handler_state} = state
+         %{delivery_tag: tag, redelivered: redelivered} = meta,
+         %__MODULE__{
+           handler_module: handler_module,
+           handler_state: handler_state,
+           backoff: backoff
+         } = state
        ) do
     try do
-      {:ok, handler_state} = handler_module.handle_message(message, handler_state)
+      {:ok, handler_state} = handler_module.handle_message(message, meta, handler_state)
       Basic.ack(state.channel, tag)
       %{state | handler_state: handler_state}
     rescue
@@ -181,7 +128,7 @@ defmodule Amqpx.Consumer do
         )
 
         Basic.reject(state.channel, tag, requeue: !redelivered)
-        :timer.sleep(@backoff)
+        :timer.sleep(backoff)
         state
     end
   end
