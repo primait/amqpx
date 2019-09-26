@@ -19,7 +19,7 @@ defmodule Amqpx.Helper do
     {Amqpx.Producer, Map.put(producer_conf, :connection_params, connection_params)}
   end
 
-  def declare_queue(
+  def declare(
         channel,
         %{
           queue: qname,
@@ -47,51 +47,51 @@ defmodule Amqpx.Helper do
     setup_queue(channel, queue)
   end
 
-  def declare_queue(channel, queue) do
+  def declare(channel, queue) do
     setup_queue(channel, queue)
   end
 
-  defp setup_dead_lettering(channel, %{queue: dlq, exchange: ""}) do
+  def setup_dead_lettering(channel, %{queue: dlq, exchange: ""}) do
     Queue.declare(channel, dlq, durable: true)
   end
 
-  defp setup_dead_lettering(channel, %{queue: dlq, exchange: exchange, routing_key: routing_key}) do
+  def setup_dead_lettering(channel, %{queue: dlq, exchange: exchange, routing_key: routing_key}) do
     Exchange.declare(channel, exchange, :topic, durable: true)
     Queue.declare(channel, dlq, durable: true)
     Queue.bind(channel, dlq, exchange, routing_key: routing_key)
   end
 
-  defp setup_dead_lettering(channel, %{queue: dlq, exchange: exchange}) do
+  def setup_dead_lettering(channel, %{queue: dlq, exchange: exchange}) do
     Exchange.declare(channel, exchange, :topic, durable: true)
     Queue.declare(channel, dlq, durable: true)
   end
 
-  defp setup_queue(channel, %{
-         queue: queue,
-         exchanges: exchanges,
-         opts: opts
-       }) do
+  def setup_queue(channel, %{
+        queue: queue,
+        exchanges: exchanges,
+        opts: opts
+      }) do
     {:ok, _} = Queue.declare(channel, queue, opts)
 
     Enum.each(exchanges, &setup_exchange(channel, queue, &1))
   end
 
-  defp setup_queue(channel, %{
-         queue: queue,
-         exchanges: exchanges
-       }) do
+  def setup_queue(channel, %{
+        queue: queue,
+        exchanges: exchanges
+      }) do
     {:ok, _} = Queue.declare(channel, queue)
 
     Enum.each(exchanges, &setup_exchange(channel, queue, &1))
   end
 
-  defp setup_exchange(channel, queue, %{
-         name: name,
-         type: type,
-         routing_keys: routing_keys,
-         opts: opts
-       })
-       when type in [:direct, :topic] do
+  def setup_exchange(channel, queue, %{
+        name: name,
+        type: type,
+        routing_keys: routing_keys,
+        opts: opts
+      })
+      when type in [:direct, :topic] do
     Exchange.declare(channel, name, type, opts)
 
     Enum.each(routing_keys, fn rk ->
@@ -99,12 +99,12 @@ defmodule Amqpx.Helper do
     end)
   end
 
-  defp setup_exchange(channel, queue, %{
-         name: name,
-         type: type,
-         routing_keys: routing_keys
-       })
-       when type in [:direct, :topic] do
+  def setup_exchange(channel, queue, %{
+        name: name,
+        type: type,
+        routing_keys: routing_keys
+      })
+      when type in [:direct, :topic] do
     Exchange.declare(channel, name, type)
 
     Enum.each(routing_keys, fn rk ->
@@ -112,17 +112,17 @@ defmodule Amqpx.Helper do
     end)
   end
 
-  defp setup_exchange(channel, queue, %{name: name, type: :fanout, opts: opts}) do
+  def setup_exchange(channel, queue, %{name: name, type: :fanout, opts: opts}) do
     Exchange.declare(channel, name, :fanout, opts)
     Queue.bind(channel, queue, name)
   end
 
-  defp setup_exchange(channel, queue, %{name: name, type: :fanout}) do
+  def setup_exchange(channel, queue, %{name: name, type: :fanout}) do
     Exchange.declare(channel, name, :fanout)
     Queue.bind(channel, queue, name)
   end
 
-  defp setup_exchange(_chan, _queue, conf) do
+  def setup_exchange(_chan, _queue, conf) do
     raise "Unhandled exchange configuration #{inspect(conf)}"
   end
 end

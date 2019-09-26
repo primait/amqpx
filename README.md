@@ -30,7 +30,7 @@ defmodule Application do
       Enum.concat(
         [
           Helper.producer_supervisor_configuration(
-            Application.get_env(:myapp, :myproducer),
+            Application.get_env(:myapp, :producer),
             Application.get_env(:myapp, :amqp_connection)
           )
         ],
@@ -91,11 +91,11 @@ config :myapp,
     %{
       handler_module: Your.Handler.Module,
       prefetch_count: 100,
-      backoff: 10_00
+      backoff: 10_000
     }
 
 config :myapp, Your.Handler.Module, %{
-    name: "my_queue",
+    queue: "my_queue",
     exchanges: [
       %{name: "amq.topic", type: :topic, routing_keys: ["my.routing_key1","my.routing_key2"], opts: [durable: true]},
       %{name: "my_exchange", type: :direct, routing_keys: ["my_queue"]},
@@ -138,7 +138,7 @@ defmodule Myapp.Consumer do
 
   def setup(channel) do
     # here you can declare your queues and exchanges
-    Helper.declare_queue(channel, @config)
+    Helper.declare(channel, @config)
     Basic.consume(channel, @queue) # Don't forget to start consuming here!
 
     {:ok, %{}}
@@ -158,7 +158,6 @@ defmodule Myapp.Producer do
 
   alias Amqpx.Producer
 
-  @spec send_payload(map) :: :ok | :error
   def send_payload(payload) do
     Producer.publish("myexchange", "my.routing_key", payload)
   end

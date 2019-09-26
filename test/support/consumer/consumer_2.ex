@@ -9,7 +9,7 @@ defmodule Amqpx.Test.Support.Consumer2 do
   @queue Application.get_env(:amqpx, __MODULE__)[:queue]
 
   def setup(channel) do
-    Helper.declare_queue(channel, @config)
+    Helper.declare(channel, @config)
     Basic.consume(channel, @queue)
     {:ok, %{}}
   end
