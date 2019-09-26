@@ -83,7 +83,7 @@ Default parameters:
 - prefetch_count: 50
 - backoff: 5_000 (connection retry)
 
-N.B: headers exchange declaration not supported by library helpers functions
+WARNING: headers exchange declaration not supported by library helpers functions
 
 ```elixir
 config :myapp,
@@ -115,37 +115,37 @@ config :myapp, Your.Handler.Module, %{
 Default parameters:
 - publish_timeout: 1_000
 - backoff: 5_000 (connection retry)
-
-
-: 
+ 
 ```elixir
-config :amqpx, :producer,
-  publisher_confirms: true,
-  publish_timeout: 2_000,
-  exchanges: [
-    [
-      name: "amq.topic",
-      type: :topic
-    ],
-    [
-      name: "amq.topic2",
-      type: :topic
-    ]
-  ]
+config :myapp, :producer, %{
+  publisher_confirms: false,
+  publish_timeout: 0
+}
 ```
+## Usage example
 
 ### Consumer
 ```elixir
-defmodule Consumer do
+defmodule Myapp.Consumer do
   @moduledoc nil
-
   @behaviour Amqpx.Consumer
 
-  def setup(_channel, _args) do
+  alias AMQP.Basic
+  alias Amqpx.Helper
+
+  @config Application.get_env(:amqpx, __MODULE__)
+  @queue Application.get_env(:amqpx, __MODULE__)[:queue]
+
+  def setup(channel) do
+    # here you can declare your queues and exchanges
+    Helper.declare_queue(channel, @config)
+    Basic.consume(channel, @queue) # Don't forget to start consuming here!
+
     {:ok, %{}}
   end
 
-  def handle_message(_payload, state) do
+  def handle_message(payload, meta, state) do
+    IO.inspect("payload: #{inspect(payload)}, metadata: #{meta}")
     {:ok, state}
   end
 end
@@ -153,43 +153,14 @@ end
 
 ### Producer
 ```elixir
-defmodule Producer do
+defmodule Myapp.Producer do
   @moduledoc nil
 
   alias Amqpx.Producer
 
   @spec send_payload(map) :: :ok | :error
   def send_payload(payload) do
-    Producer.publish("topic1", "amqpx.test1", Jason.encode!(payload))
-  end
-end
-```
-
-### Application
-Setup consumers and/or producers inside your Application
-```elixir
-defmodule Application do
-  def start(_type, _args) do
-    import Supervisor.Spec
-    children =
-      [
-        producers()
-      ]
-      |> Kernel.++(consumers())
-
-    opts = [strategy: :one_for_one, name: Supervisor]
-    Supervisor.start_link(children, opts)
-  end
-
-  def consumers() do
-    Enum.map(
-      Application.get_env(:amqpx, :consumers),
-      &Supervisor.child_spec({Amqpx.Consumer, &1}, id: UUID.uuid1())
-    )
-  end
-
-  def producers() do
-    {Amqpx.Producer, Application.get_env(:amqpx, :producer)}
+    Producer.publish("myexchange", "my.routing_key", payload)
   end
 end
 ```
