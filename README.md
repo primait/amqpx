@@ -67,8 +67,8 @@ Enum.each(
 
 ### Connection
 ```elixir
-config :myapp, :amqp_connection,
-  connection_params: [
+config :myapp,
+  amqp_connection: [
     username: "amqpx",
     password: "amqpx",
     host: "rabbit",
