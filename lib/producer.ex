@@ -150,6 +150,6 @@ defmodule Amqpx.Producer do
 
   defp declare_exchanges(exchanges, channel) do
     exchanges
-    |> Enum.each(&Amqpx.Helper.setup_exchange(channel, :_, &1))
+    |> Enum.each(&Amqpx.Helper.setup_exchange(channel, &1))
   end
 end
