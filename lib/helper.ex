@@ -122,6 +122,14 @@ defmodule Amqpx.Helper do
     Queue.bind(channel, queue, name)
   end
 
+  def setup_exchange(channel, _, %{name: name, type: type, opts: opts}) do
+    Exchange.declare(channel, name, type, opts)
+  end
+
+  def setup_exchange(channel, _, %{name: name, type: type}) do
+    Exchange.declare(channel, name, type)
+  end
+
   def setup_exchange(_chan, _queue, conf) do
     raise "Unhandled exchange configuration #{inspect(conf)}"
   end
