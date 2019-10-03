@@ -83,7 +83,7 @@ Default parameters:
 - prefetch_count: 50
 - backoff: 5_000 (connection retry)
 
-WARNING: headers exchange declaration not supported by library helpers functions
+WARNING: headers exchange binding not supported by library helpers functions
 
 ```elixir
 config :myapp,
@@ -115,11 +115,17 @@ config :myapp, Your.Handler.Module, %{
 Default parameters:
 - publish_timeout: 1_000
 - backoff: 5_000 (connection retry)
+- exchanges: []
+
+You can also declare exchanges from the producer module, simply specify them in the configuration. There is an example below.
  
 ```elixir
 config :myapp, :producer, %{
   publisher_confirms: false,
-  publish_timeout: 0
+  publish_timeout: 0.
+  exchanges: [
+    %{name: "my_exchange", type: :direct, opts: [durable: true]}
+  ]
 }
 ```
 ## Usage example
