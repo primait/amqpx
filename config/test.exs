@@ -69,10 +69,9 @@ config :amqpx, :producer, %{
   publisher_confirms: false,
   exchanges: [
     %{
-      name: "public_exchange",
+      name: "test_exchange",
       type: :topic,
-      opts: [durable: true],
-      routing_keys: ["come.se.fosse.antani"]
+      opts: [durable: true]
     }
   ]
 }
