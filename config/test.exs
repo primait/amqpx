@@ -66,5 +66,12 @@ config :amqpx, Amqpx.Test.Support.Consumer3, %{
 
 config :amqpx, :producer, %{
   publish_timeout: 5_000,
-  publisher_confirms: false
+  publisher_confirms: false,
+  exchanges: [
+    %{
+      name: "test_exchange",
+      type: :topic,
+      opts: [durable: true]
+    }
+  ]
 }

@@ -13,7 +13,8 @@ defmodule Amqpx.Producer do
     :channel,
     :publisher_confirms,
     publish_timeout: 1_000,
-    backoff: 5_000
+    backoff: 5_000,
+    exchanges: []
   ]
 
   # Public API
@@ -125,18 +126,30 @@ defmodule Amqpx.Producer do
 
   @spec broker_connect(state()) :: state()
   defp broker_connect(
-         %{publisher_confirms: publisher_confirms, connection_params: connection_params} = state
+         %{
+           publisher_confirms: publisher_confirms,
+           connection_params: connection_params,
+           exchanges: exchanges
+         } = state
        ) do
     {:ok, connection} = Connection.open(connection_params)
     Process.monitor(connection.pid)
 
     {:ok, channel} = Channel.open(connection)
+    Process.monitor(channel.pid)
     state = %{state | channel: channel}
+
+    declare_exchanges(exchanges, channel)
 
     if publisher_confirms do
       Confirm.select(channel)
     end
 
     state
+  end
+
+  defp declare_exchanges(exchanges, channel) do
+    exchanges
+    |> Enum.each(&Amqpx.Helper.setup_exchange(channel, &1))
   end
 end

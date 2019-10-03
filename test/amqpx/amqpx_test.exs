@@ -1,6 +1,6 @@
 defmodule Amqpx.Test.AmqpxTest do
   use ExUnit.Case
-  alias Amqpx.Test.Support.{Consumer1, Consumer2, Producer1, Producer2}
+  alias Amqpx.Test.Support.{Consumer1, Consumer2, Producer1, Producer2, Producer3}
   alias Amqpx.Helper
   import Mock
 
@@ -51,5 +51,11 @@ defmodule Amqpx.Test.AmqpxTest do
         refute called(Consumer1.handle_message(Jason.encode!(payload2), :_, :_))
       end
     end
+  end
+
+  test "e2e: try to publish to an exchange defined in producer conf" do
+    payload = %{test: 1}
+
+    assert Producer3.send_payload(payload) === :ok
   end
 end
