@@ -136,6 +136,7 @@ defmodule Amqpx.Producer do
     Process.monitor(connection.pid)
 
     {:ok, channel} = Channel.open(connection)
+    Process.monitor(channel.pid)
     state = %{state | channel: channel}
 
     declare_exchanges(exchanges, channel)
