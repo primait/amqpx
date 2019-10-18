@@ -51,15 +51,6 @@ steps:
     depends_on:
       - build-image
 
-  - name: compile-dev
-    image: prima/amqpx-ci:1
-    environment:
-      MIX_ENV: dev
-    commands:
-      - mix compile --all-warnings --ignore-module-conflict --warnings-as-errors --debug-info
-    depends_on:
-      - init
-
   - name: compile-test
     image: prima/amqpx-ci:1
     environment:
