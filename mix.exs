@@ -48,11 +48,7 @@ defmodule Amqpx.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:amqp, "~> 1.3", override: true},
-      {:amqp_client, "~> 3.7.20-rc", override: true},
-      {:rabbit_common, "~> 3.7.20-rc", override: true},
-      {:jsx, "~> 2.10", override: true},
-      {:lager, "~> 3.8", override: true},
+      {:amqp, "~> 1.3"},
       {:elixir_uuid, "~> 1.1"},
       {:prima_logger_logstash_backend, "~> 1.1.1", only: [:dev, :test]},
       {:credo, "~> 1.1.4", only: [:dev, :test]},
