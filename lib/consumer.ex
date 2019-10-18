@@ -122,13 +122,13 @@ defmodule Amqpx.Consumer do
       %{state | handler_state: handler_state}
     rescue
       e in _ ->
-        Logger.error(
-          "Message not handled",
-          error: inspect(e)
-        )
+        Logger.error(inspect(e))
 
-        Basic.reject(state.channel, tag, requeue: !redelivered)
-        :timer.sleep(backoff)
+        Task.start(fn ->
+          :timer.sleep(backoff)
+          Basic.reject(state.channel, tag, requeue: !redelivered)
+        end)
+
         state
     end
   end
