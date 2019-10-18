@@ -5,7 +5,7 @@ defmodule Amqpx.MixProject do
     [
       app: :amqpx,
       name: "amqpx",
-      version: "5.1.2",
+      version: "5.1.3",
       elixir: "~> 1.7",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :production,
@@ -48,9 +48,13 @@ defmodule Amqpx.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:amqp, "~> 1.3"},
+      {:amqp, "~> 1.3", override: true},
+      {:amqp_client, "~> 3.7.20-rc", override: true},
+      {:rabbit_common, "~> 3.7.20-rc", override: true},
+      {:jsx, "~> 2.10", override: true},
+      {:lager, "~> 3.8", override: true},
       {:elixir_uuid, "~> 1.1"},
-      {:prima_logger_logstash_backend, "~> 1.1.1"},
+      {:prima_logger_logstash_backend, "~> 1.1.1", only: [:dev, :test]},
       {:credo, "~> 1.1.4", only: [:dev, :test]},
       {:dialyxir, "1.0.0-rc.7", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev},

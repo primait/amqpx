@@ -99,10 +99,10 @@ defmodule Amqpx.Consumer do
     {:ok, channel} = Channel.open(connection)
     state = %{state | channel: channel}
 
+    Basic.qos(channel, prefetch_count: prefetch_count)
+
     {:ok, handler_state} = handler_module.setup(channel)
     state = %{state | handler_state: handler_state}
-
-    Basic.qos(channel, prefetch_count: prefetch_count)
 
     state
   end
