@@ -79,7 +79,7 @@ defmodule Amqpx.Consumer do
 
   def terminate(_, %__MODULE__{channel: channel, handler_state: handler_state}) do
     case Map.fetch(handler_state, :consumer_tag) do
-      {:ok, c_tag} -> Basic.cancel(c_tag)
+      {:ok, c_tag} -> Basic.cancel(channel, c_tag)
       _ -> nil
     end
 
