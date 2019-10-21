@@ -79,7 +79,6 @@ defmodule Amqpx.Consumer do
   end
 
   def terminate(_, %__MODULE__{channel: channel, consumer_tag: consumer_tag}) do
-
     Basic.cancel(channel, consumer_tag)
 
     if Process.alive?(channel.pid) do
