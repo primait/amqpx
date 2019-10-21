@@ -12,7 +12,8 @@ defmodule Amqpx.Consumer do
     :handler_module,
     :handler_state,
     prefetch_count: 50,
-    backoff: 5_000
+    backoff: 5_000,
+    consumer_tag: nil
   ]
 
   @type state() :: %__MODULE__{}
@@ -45,8 +46,8 @@ defmodule Amqpx.Consumer do
   end
 
   # Confirmation sent by the broker after registering this process as a consumer
-  def handle_info({:basic_consume_ok, %{consumer_tag: _consumer_tag}}, state) do
-    {:noreply, state}
+  def handle_info({:basic_consume_ok, %{consumer_tag: consumer_tag}}, state) do
+    {:noreply, %{state | consumer_tag: consumer_tag}}
   end
 
   # Sent by the broker when the consumer is unexpectedly cancelled (such as after a queue deletion)
@@ -77,11 +78,9 @@ defmodule Amqpx.Consumer do
     {:noreply, state}
   end
 
-  def terminate(_, %__MODULE__{channel: channel, handler_state: handler_state}) do
-    case Map.fetch(handler_state, :consumer_tag) do
-      {:ok, c_tag} -> Basic.cancel(channel, c_tag)
-      _ -> nil
-    end
+  def terminate(_, %__MODULE__{channel: channel, consumer_tag: consumer_tag}) do
+
+    Basic.cancel(channel, consumer_tag)
 
     if Process.alive?(channel.pid) do
       Channel.close(channel)
