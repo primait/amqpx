@@ -77,11 +77,18 @@ defmodule Amqpx.Consumer do
     {:noreply, state}
   end
 
-  def terminate(_, %__MODULE__{channel: channel}) do
-    with %Channel{conn: %Connection{pid: pid} = conn} <- channel do
-      if Process.alive?(pid) do
-        Connection.close(conn)
-      end
+  def terminate(_, %__MODULE__{channel: channel, handler_state: handler_state}) do
+    case Map.fetch(handler_state, :consumer_tag) do
+      {:ok, c_tag} -> Basic.cancel(c_tag)
+      _ -> nil
+    end
+
+    if Process.alive?(channel.pid) do
+      Channel.close(channel)
+    end
+
+    if Process.alive?(channel.conn.pid) do
+      Connection.close(channel.conn)
     end
   end
 
