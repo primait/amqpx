@@ -97,6 +97,7 @@ defmodule Amqpx.Consumer do
     Process.monitor(connection.pid)
 
     {:ok, channel} = Channel.open(connection)
+    Process.monitor(channel.pid)
     state = %{state | channel: channel}
 
     Basic.qos(channel, prefetch_count: prefetch_count)
