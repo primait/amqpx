@@ -15,9 +15,7 @@ defmodule Amqpx.Test.AmqpxTest do
 
     Enum.each(
       Application.get_env(:amqpx, :consumers),
-      &Amqpx.Consumer.start_link(
-        Map.put(&1, :connection_params, Application.get_env(:amqpx, :connection_params))
-      )
+      &Amqpx.Consumer.start_link(Map.put(&1, :connection_params, Application.get_env(:amqpx, :connection_params)))
     )
 
     :timer.sleep(1_000)

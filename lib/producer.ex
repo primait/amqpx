@@ -107,11 +107,15 @@ defmodule Amqpx.Producer do
     end
   end
 
+  def terminate(_, %__MODULE__{channel: nil}), do: nil
+
   def terminate(_, %__MODULE__{channel: channel}) do
-    with %Channel{conn: %Connection{pid: pid} = conn} <- channel do
-      if Process.alive?(pid) do
-        Connection.close(conn)
-      end
+    if Process.alive?(channel.pid) do
+      Channel.close(channel)
+    end
+
+    if Process.alive?(channel.conn.pid) do
+      Connection.close(channel.conn)
     end
   end
 

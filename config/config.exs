@@ -28,4 +28,6 @@ use Mix.Config
 # here (which is why it is important to import them last).
 #
 
+config :lager, :error_logger_hwm, 1_000
+
 import_config "#{Mix.env()}.exs"

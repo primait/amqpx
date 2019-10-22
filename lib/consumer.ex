@@ -4,10 +4,9 @@ defmodule Amqpx.Consumer do
   """
   require Logger
   use GenServer
-  alias AMQP.{Connection, Channel, Basic}
+  alias AMQP.{Channel, Basic}
 
   defstruct [
-    :connection_params,
     :channel,
     :handler_module,
     :handler_state,
@@ -30,17 +29,30 @@ defmodule Amqpx.Consumer do
     {:ok, state}
   end
 
-  def handle_info(:setup, %{backoff: backoff} = state) do
-    try do
-      {:noreply, broker_connect(state)}
-    rescue
-      exception in _ ->
-        Logger.error("Unable to connect to Broker! Retrying with #{backoff}ms backoff",
-          error: inspect(exception)
-        )
-
+  def handle_info(
+        :setup,
+        %{
+          backoff: backoff,
+          prefetch_count: prefetch_count,
+          handler_module: handler_module
+        } = state
+      ) do
+    case GenServer.call(AmqpxConnectionManager, :get_connection) do
+      nil ->
         :timer.sleep(backoff)
-        {:stop, exception, state}
+        {:stop, :not_ready, state}
+
+      connection ->
+        {:ok, channel} = Channel.open(connection)
+        Process.monitor(channel.pid)
+        state = %{state | channel: channel}
+
+        Basic.qos(channel, prefetch_count: prefetch_count)
+
+        {:ok, handler_state} = handler_module.setup(channel)
+        state = %{state | handler_state: handler_state}
+
+        {:noreply, state}
     end
   end
 
@@ -59,15 +71,13 @@ defmodule Amqpx.Consumer do
     {:stop, :basic_cancel_ok, state}
   end
 
-  def handle_info(
-        {:basic_deliver, payload, meta},
-        state
-      ) do
+  def handle_info({:basic_deliver, payload, meta}, state) do
     {:noreply, handle_message(payload, meta, state)}
   end
 
   def handle_info({:DOWN, _, :process, _pid, reason}, state) do
-    {:stop, {:DOWN, reason}, state}
+    Logger.error("Monitored channel process crashed: #{inspect(reason)}")
+    {:stop, :channel_exited, state}
   end
 
   def handle_info({:EXIT, _pid, :normal}, state), do: {:stop, :EXIT, state}
@@ -83,43 +93,12 @@ defmodule Amqpx.Consumer do
     if Process.alive?(channel.pid) do
       Channel.close(channel)
     end
-
-    if Process.alive?(channel.conn.pid) do
-      Connection.close(channel.conn)
-    end
-  end
-
-  @spec broker_connect(state()) :: state()
-  defp broker_connect(
-         %__MODULE__{
-           connection_params: connection_params,
-           handler_module: handler_module,
-           prefetch_count: prefetch_count
-         } = state
-       ) do
-    {:ok, connection} = Connection.open(connection_params)
-    Process.monitor(connection.pid)
-
-    {:ok, channel} = Channel.open(connection)
-    Process.monitor(channel.pid)
-    state = %{state | channel: channel}
-
-    Basic.qos(channel, prefetch_count: prefetch_count)
-
-    {:ok, handler_state} = handler_module.setup(channel)
-    state = %{state | handler_state: handler_state}
-
-    state
   end
 
   defp handle_message(
          message,
          %{delivery_tag: tag, redelivered: redelivered} = meta,
-         %__MODULE__{
-           handler_module: handler_module,
-           handler_state: handler_state,
-           backoff: backoff
-         } = state
+         %__MODULE__{handler_module: handler_module, handler_state: handler_state, backoff: backoff} = state
        ) do
     try do
       {:ok, handler_state} = handler_module.handle_message(message, meta, handler_state)

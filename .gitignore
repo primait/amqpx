@@ -1,7 +1,9 @@
 # App artifacts
 /_build
+/config/dev.exs
 /deps
 /doc
+/lib/application.ex
 
 # Erlang logs
 /log
