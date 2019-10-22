@@ -7,7 +7,7 @@ config :logger, :console,
 config :logger, level: :info
 
 config :amqpx,
-  connection_params: [
+  amqp_connection: [
     username: "amqpx",
     password: "amqpx",
     host: "rabbit",

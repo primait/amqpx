@@ -14,12 +14,8 @@ defmodule Amqpx.Helper do
     |> Enum.map(&Supervisor.child_spec({Amqpx.Consumer, &1}, id: UUID.uuid1()))
   end
 
-  # def producer_supervisor_configuration(producer_conf) do
-  #   {Amqpx.Producer, producer_conf}
-  # end
-
-  def producer_supervisor_configuration(producer_conf, connection_params) do
-    {Amqpx.Producer, Map.put(producer_conf, :connection_params, connection_params)}
+  def producer_supervisor_configuration(producer_conf) do
+    {Amqpx.Producer, producer_conf}
   end
 
   def declare(
