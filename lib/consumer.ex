@@ -36,7 +36,8 @@ defmodule Amqpx.Consumer do
     Process.monitor(channel.pid)
     state = %{state | channel: channel}
 
-    :erlang.process_info(channel.pid)
+    channel.pid
+    |> :erlang.process_info()
     |> Keyword.get(:dictionary)
     |> Keyword.get(:"$ancestors")
     |> Enum.each(&Process.monitor(&1))

@@ -69,7 +69,8 @@ defmodule Amqpx.ConnectionManager do
     state = %{state | connection: connection}
     Process.monitor(connection.pid)
 
-    :erlang.process_info(connection.pid)
+    connection.pid
+    |> :erlang.process_info()
     |> Keyword.get(:dictionary)
     |> Keyword.get(:"$ancestors")
     |> Enum.each(&Process.monitor(&1))
