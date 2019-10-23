@@ -69,14 +69,10 @@ defmodule Amqpx.ConnectionManager do
     state = %{state | connection: connection}
     Process.monitor(connection.pid)
 
-    # {:ok, channel} = Channel.open(connection)
-    # Process.monitor(channel.pid)
-    # state = %{state | channel: channel}
-
-    # Basic.qos(channel, prefetch_count: prefetch_count)
-
-    # {:ok, handler_state} = handler_module.setup(channel)
-    # state = %{state | handler_state: handler_state}
+    :erlang.process_info(connection.pid)
+    |> Keyword.get(:dictionary)
+    |> Keyword.get(:"$ancestors")
+    |> Enum.each(&Process.monitor(&1))
 
     state
   end

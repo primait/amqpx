@@ -29,31 +29,24 @@ defmodule Amqpx.Consumer do
     {:ok, state}
   end
 
-  def handle_info(
-        :setup,
-        %{
-          backoff: backoff,
-          prefetch_count: prefetch_count,
-          handler_module: handler_module
-        } = state
-      ) do
-    case GenServer.call(AmqpxConnectionManager, :get_connection) do
-      nil ->
-        :timer.sleep(backoff)
-        {:stop, :not_ready, state}
+  def handle_info(:setup, %{prefetch_count: prefetch_count, handler_module: handler_module} = state) do
+    connection = GenServer.call(AmqpxConnectionManager, :get_connection)
 
-      connection ->
-        {:ok, channel} = Channel.open(connection)
-        Process.monitor(channel.pid)
-        state = %{state | channel: channel}
+    {:ok, channel} = Channel.open(connection)
+    Process.monitor(channel.pid)
+    state = %{state | channel: channel}
 
-        Basic.qos(channel, prefetch_count: prefetch_count)
+    :erlang.process_info(channel.pid)
+    |> Keyword.get(:dictionary)
+    |> Keyword.get(:"$ancestors")
+    |> Enum.each(&Process.monitor(&1))
 
-        {:ok, handler_state} = handler_module.setup(channel)
-        state = %{state | handler_state: handler_state}
+    Basic.qos(channel, prefetch_count: prefetch_count)
 
-        {:noreply, state}
-    end
+    {:ok, handler_state} = handler_module.setup(channel)
+    state = %{state | handler_state: handler_state}
+
+    {:noreply, state}
   end
 
   # Confirmation sent by the broker after registering this process as a consumer

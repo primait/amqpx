@@ -42,25 +42,25 @@ defmodule Amqpx.Producer do
     {:ok, state}
   end
 
-  def handle_info(:setup, %{backoff: backoff, publisher_confirms: publisher_confirms, exchanges: exchanges} = state) do
-    case GenServer.call(AmqpxConnectionManager, :get_connection) do
-      nil ->
-        :timer.sleep(backoff)
-        {:stop, :not_ready, state}
+  def handle_info(:setup, %{publisher_confirms: publisher_confirms, exchanges: exchanges} = state) do
+    connection = GenServer.call(AmqpxConnectionManager, :get_connection)
 
-      connection ->
-        {:ok, channel} = Channel.open(connection)
-        Process.monitor(channel.pid)
-        state = %{state | channel: channel}
+    {:ok, channel} = Channel.open(connection)
+    Process.monitor(channel.pid)
+    state = %{state | channel: channel}
 
-        declare_exchanges(exchanges, channel)
+    :erlang.process_info(channel.pid)
+    |> Keyword.get(:dictionary)
+    |> Keyword.get(:"$ancestors")
+    |> Enum.each(&Process.monitor(&1))
 
-        if publisher_confirms do
-          Confirm.select(channel)
-        end
+    declare_exchanges(exchanges, channel)
 
-        {:noreply, state}
+    if publisher_confirms do
+      Confirm.select(channel)
     end
+
+    {:noreply, state}
   end
 
   def handle_info({:DOWN, _, :process, _pid, reason}, state) do
