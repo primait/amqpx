@@ -55,6 +55,8 @@ defmodule Amqpx.ConnectionManager do
     {:noreply, state}
   end
 
+  def terminate(_, %__MODULE__{connection: nil}), do: nil
+
   def terminate(_, %__MODULE__{connection: connection}) do
     if Process.alive?(connection.pid) do
       Connection.close(connection)
