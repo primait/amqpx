@@ -1,10 +1,10 @@
 defmodule QueueTest do
   use ExUnit.Case
 
-  alias AMQP.Connection
-  alias AMQP.Channel
-  alias AMQP.Exchange
-  alias AMQP.Queue
+  alias Amqpx.Connection
+  alias Amqpx.Channel
+  alias Amqpx.Exchange
+  alias Amqpx.Queue
 
   setup do
     {:ok, conn} = Connection.open(Application.get_env(:amqpx, :amqp_connection))

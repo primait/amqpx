@@ -39,7 +39,7 @@ defmodule Amqpx.Queue do
         exclusive: Keyword.get(options, :exclusive, false),
         auto_delete: Keyword.get(options, :auto_delete, false),
         nowait: Keyword.get(options, :no_wait, false),
-        arguments: Keyword.get(options, :arguments, []) |> Utils.to_type_tuple()
+        arguments: options |> Keyword.get(:arguments, []) |> Utils.to_type_tuple()
       )
 
     case :amqp_channel.call(pid, queue_declare) do
@@ -75,7 +75,7 @@ defmodule Amqpx.Queue do
         exchange: exchange,
         routing_key: Keyword.get(options, :routing_key, ""),
         nowait: Keyword.get(options, :no_wait, false),
-        arguments: Keyword.get(options, :arguments, []) |> Utils.to_type_tuple()
+        arguments: options |> Keyword.get(:arguments, []) |> Utils.to_type_tuple()
       )
 
     case :amqp_channel.call(pid, queue_bind) do

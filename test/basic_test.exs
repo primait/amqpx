@@ -1,7 +1,7 @@
 defmodule BasicTest do
   use ExUnit.Case
 
-  alias AMQP.{Basic, Connection, Channel, Queue}
+  alias Amqpx.{Basic, Connection, Channel, Queue}
   # alias Channel.ReceiverManager
 
   setup do

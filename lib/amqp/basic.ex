@@ -68,7 +68,7 @@ defmodule Amqpx.Basic do
       p_basic(
         content_type: Keyword.get(options, :content_type, :undefined),
         content_encoding: Keyword.get(options, :content_encoding, :undefined),
-        headers: Keyword.get(options, :headers, :undefined) |> Utils.to_type_tuple(),
+        headers: options |> Keyword.get(:headers, :undefined) |> Utils.to_type_tuple(),
         delivery_mode: if(options[:persistent], do: 2, else: 1),
         priority: Keyword.get(options, :priority, :undefined),
         correlation_id: Keyword.get(options, :correlation_id, :undefined),

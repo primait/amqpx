@@ -1,8 +1,8 @@
 defmodule ChannelTest do
   use ExUnit.Case
 
-  alias AMQP.Connection
-  alias AMQP.Channel
+  alias Amqpx.Connection
+  alias Amqpx.Channel
 
   setup do
     {:ok, conn} = Connection.open(Application.get_env(:amqpx, :amqp_connection))

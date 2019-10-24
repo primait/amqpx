@@ -1,7 +1,7 @@
 defmodule ConnectionTest do
   use ExUnit.Case
-  import AMQP.Core
-  alias AMQP.Connection
+  import Amqpx.Core
+  alias Amqpx.Connection
 
   # test "open connection with default settings" do
   #   assert {:ok, conn} = Connection.open(Application.get_env(:amqpx, :amqp_connection))

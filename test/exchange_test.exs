@@ -1,9 +1,9 @@
 defmodule ExchangeTest do
   use ExUnit.Case
 
-  alias AMQP.Connection
-  alias AMQP.Channel
-  alias AMQP.Exchange
+  alias Amqpx.Connection
+  alias Amqpx.Channel
+  alias Amqpx.Exchange
 
   setup do
     {:ok, conn} = Connection.open(Application.get_env(:amqpx, :amqp_connection))

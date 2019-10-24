@@ -1,7 +1,7 @@
 defmodule UtilsTest do
   use ExUnit.Case
 
-  alias AMQP.Utils
+  alias Amqpx.Utils
 
   test "leaves correct lists as is" do
     type_tuple = {"test", :longstr, "me"}
