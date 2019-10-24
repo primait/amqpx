@@ -5,20 +5,14 @@ defmodule Amqpx.Test.AmqpxTest do
   import Mock
 
   setup_all do
-    {_, producer} =
-      Helper.producer_supervisor_configuration(
-        Application.get_env(:amqpx, :producer),
-        Application.get_env(:amqpx, :connection_params)
-      )
+    Amqpx.ConnectionManager.start_link(%{
+      connection_params: Application.get_env(:amqpx, :amqp_connection)
+    })
 
-    Amqpx.Producer.start_link(producer)
+    Amqpx.Producer.start_link(Application.get_env(:amqpx, :producer))
 
-    Enum.each(
-      Application.get_env(:amqpx, :consumers),
-      &Amqpx.Consumer.start_link(
-        Map.put(&1, :connection_params, Application.get_env(:amqpx, :connection_params))
-      )
-    )
+    Application.get_env(:amqpx, :consumers)
+    |> Enum.each(&Amqpx.Consumer.start_link(&1))
 
     :timer.sleep(1_000)
     :ok

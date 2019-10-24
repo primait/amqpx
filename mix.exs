@@ -5,7 +5,7 @@ defmodule Amqpx.MixProject do
     [
       app: :amqpx,
       name: "amqpx",
-      version: "5.1.5",
+      version: "5.2.0",
       elixir: "~> 1.7",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :production,
@@ -48,26 +48,28 @@ defmodule Amqpx.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:amqp, "~> 1.3"},
+      {:amqp_client, "~> 3.7.20-rc"},
+      {:rabbit_common, "~> 3.7.20-rc"},
       {:elixir_uuid, "~> 1.1"},
-      {:prima_logger_logstash_backend, "~> 1.1.1", only: [:dev, :test]},
-      {:credo, "~> 1.1.4", only: [:dev, :test]},
-      {:dialyxir, "1.0.0-rc.7", only: [:dev, :test], runtime: false},
-      {:ex_doc, ">= 0.0.0", only: :dev},
-      {:mock, "~> 0.3.0", only: :test}
+      {:credo, "~> 1.1", only: [:dev, :test]},
+      {:mock, "~> 0.3.0", only: :test},
+      {:dialyxir, "~> 1.0.0-rc", only: [:dev, :test], runtime: false},
+      {:earmark, "~> 1.0", only: :docs},
+      {:ex_doc, "~> 0.15", only: :docs},
+      {:inch_ex, "~> 0.5", only: :docs}
     ]
   end
 
   def package do
     [
       name: "amqpx",
-      maintainers: ["Giuseppe D'Anna"],
-      licenses: ["Apache 2.0"],
+      maintainers: ["Giuseppe D'Anna", "Michelangelo Morrillo"],
+      licenses: ["MIT"],
       links: %{"Github" => "https://github.com/primait/amqpx"}
     ]
   end
 
   def description do
-    "Simple elixir AMQP client"
+    "Fork of the AMQP library with some improvements and facilities"
   end
 end

@@ -3,7 +3,7 @@ defmodule Amqpx.Test.Support.Producer3 do
 
   require Logger
 
-  alias Amqpx.Producer
+  alias Amqpx.Gen.Producer
 
   @spec send_payload(map) :: :ok | :error
   def send_payload(payload) do

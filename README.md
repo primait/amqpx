@@ -2,7 +2,7 @@ Amqpx
 =========
 
 ## About
-A simple AMQP library based on [official elixir amqp client](https://hex.pm/packages/amqp)
+A simple Amqpx library based on [official elixir amqp client](https://hex.pm/packages/amqp)
 Written to prevent duplicated and boilerplate code to handle all the lifecycle of the amqp connection. Write your publisher or consumer and forget about the rest!
 
 ## Installation
@@ -15,8 +15,8 @@ def deps do
 end
 ```
 
-From 3.0.0 AMQPX is no longer an application. This is so the client can choose in which environment or configuration to have consumers up and running.
-You would then need to start your consumers and producer in the client's supervision tree, instead of adding AMQPX to the `extra_application` list as it was in the past.
+From 3.0.0 Amqpx is no longer an application. This is so the client can choose in which environment or configuration to have consumers up and running.
+You would then need to start your consumers and producer in the client's supervision tree, instead of adding Amqpx to the `extra_application` list as it was in the past.
 
 To start all consumers and producer inside your application, using the library helper function:
 ```elixir
@@ -29,17 +29,18 @@ defmodule Application do
     children =
       Enum.concat(
         [
-          Helper.producer_supervisor_configuration(
-            Application.get_env(:myapp, :producer),
+          Helper.manager_supervisor_configuration(
             Application.get_env(:myapp, :amqp_connection)
+          ),
+          Helper.producer_supervisor_configuration(
+            Application.get_env(:myapp, :producer)
           )
         ],
         Helper.consumers_supervisor_configuration(
-          Application.get_env(:myapp, :consumers),
-          Application.get_env(:myapp, :amqp_connection)
+          Application.get_env(:myapp, :consumers)
         )
       )
-    opts = [strategy: :one_for_one, name: Supervisor]
+    opts = [strategy: :one_for_one, name: Supervisor, max_restarts: 5] # set this accordingly with your consumers count, ex: max_restarts: n_consumer + 5 
     Supervisor.start_link(children, opts)
   end
 end
@@ -47,20 +48,11 @@ end
 
 Start consumers and producer manually:
 ```elixir
-{_, producer} =
-  Helper.producer_supervisor_configuration(
-    Application.get_env(:myapp, :producer),
-    Application.get_env(:myapp, :amqp_connection)
-  )
+Amqpx.ConnectionManager.start_link(%{connection_params: Application.get_env(:myapp, :amqp_connection)})
 
-Amqpx.Producer.start_link(producer)
+Amqpx.Producer.start_link(Application.get_env(:myapp, :producer))
 
-Enum.each(
-  Application.get_env(:myapp, :consumers),
-  &Amqpx.Consumer.start_link(
-    Map.put(&1, :connection_params, Application.get_env(:myapp, :amqp_connection))
-  )
-)
+Enum.each(Application.get_env(:myapp, :consumers), &Amqpx.Consumer.start_link(&1))
 ```
 
 ## Sample configuration
@@ -134,9 +126,9 @@ config :myapp, :producer, %{
 ```elixir
 defmodule Myapp.Consumer do
   @moduledoc nil
-  @behaviour Amqpx.Consumer
+  @behaviour Amqpx.Gen.Consumer
 
-  alias AMQP.Basic
+  alias Amqpx.Basic
   alias Amqpx.Helper
 
   @config Application.get_env(:amqpx, __MODULE__)
@@ -162,7 +154,7 @@ end
 defmodule Myapp.Producer do
   @moduledoc nil
 
-  alias Amqpx.Producer
+  alias Amqpx.Gen.Producer
 
   def send_payload(payload) do
     Producer.publish("myexchange", "my.routing_key", payload)

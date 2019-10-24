@@ -3,20 +3,18 @@ defmodule Amqpx.Helper do
   Helper functions
   """
 
-  alias AMQP.{Exchange, Queue}
+  alias Amqpx.{Exchange, Queue}
 
-  def consumers_supervisor_configuration(handlers_conf, connection_params) do
-    Enum.map(
-      handlers_conf,
-      &Supervisor.child_spec(
-        {Amqpx.Consumer, Map.put(&1, :connection_params, connection_params)},
-        id: UUID.uuid1()
-      )
-    )
+  def manager_supervisor_configuration(config) do
+    {Amqpx.Gen.ConnectionManager, %{connection_params: config}}
   end
 
-  def producer_supervisor_configuration(producer_conf, connection_params) do
-    {Amqpx.Producer, Map.put(producer_conf, :connection_params, connection_params)}
+  def consumers_supervisor_configuration(handlers_conf) do
+    Enum.map(handlers_conf, &Supervisor.child_spec({Amqpx.Gen.Consumer, &1}, id: UUID.uuid1()))
+  end
+
+  def producer_supervisor_configuration(producer_conf) do
+    {Amqpx.Gen.Producer, producer_conf}
   end
 
   def declare(

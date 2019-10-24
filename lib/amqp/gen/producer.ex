@@ -1,15 +1,14 @@
-defmodule Amqpx.Producer do
+defmodule Amqpx.Gen.Producer do
   @moduledoc """
-  Generic implementation of AMQP producer
+  Generic implementation of Amqpx producer
   """
   require Logger
   use GenServer
-  alias AMQP.{Connection, Channel, Basic, Confirm}
+  alias Amqpx.{Channel, Basic, Confirm}
 
   @type state() :: %__MODULE__{}
 
   defstruct [
-    :connection_params,
     :channel,
     :publisher_confirms,
     publish_timeout: 1_000,
@@ -21,6 +20,12 @@ defmodule Amqpx.Producer do
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  def init(opts) do
+    state = struct(__MODULE__, opts)
+    Process.send(self(), :setup, [])
+    {:ok, state}
   end
 
   @spec publish(String.t(), String.t(), String.t(), Keyword.t()) :: :ok | :error
@@ -37,35 +42,60 @@ defmodule Amqpx.Producer do
 
   # Callbacks
 
-  def init(opts) do
-    state = struct(__MODULE__, opts)
-    Process.send(self(), :setup, [])
-    {:ok, state}
-  end
-
-  def handle_info(:setup, %{backoff: backoff} = state) do
-    try do
-      {:noreply, broker_connect(state)}
-    rescue
-      exception in _ ->
-        Logger.error("Unable to connect to Broker! Retrying with #{inspect(backoff)}ms backoff",
-          error: inspect(exception)
-        )
-
+  def handle_info(
+        :setup,
+        %{backoff: backoff, publisher_confirms: publisher_confirms, exchanges: exchanges} = state
+      ) do
+    case GenServer.call(Amqpx.Gen.ConnectionManager, :get_connection) do
+      nil ->
         :timer.sleep(backoff)
-        {:stop, exception, state}
+        {:stop, :not_ready, state}
+
+      connection ->
+        {:ok, channel} = Channel.open(connection, self())
+        Process.monitor(channel.pid)
+        state = %{state | channel: channel}
+
+        declare_exchanges(exchanges, channel)
+
+        if publisher_confirms do
+          Confirm.select(channel)
+        end
+
+        {:noreply, state}
     end
   end
 
-  def handle_info({:DOWN, _, :process, _pid, reason}, state) do
-    {:stop, {:DOWN, reason}, state}
+  def handle_info({_ref, {:ok, _port, _pid}}, state) do
+    Logger.debug("Amqpx socket probably restarted by underlying library")
+    {:noreply, state}
   end
 
-  def handle_info({:EXIT, _pid, :normal}, state), do: {:stop, :basic_cancel, state}
+  # Error handling
+
+  def handle_info({_ref, {:error, :no_socket, _pid}}, state) do
+    Logger.debug("Amqpx socket not found")
+    {:noreply, state}
+  end
+
+  def handle_info({:DOWN, _, :process, _pid, reason}, state) do
+    Logger.info("Monitored channel process crashed: #{inspect(reason)}. Restarting...")
+    {:stop, :channel_exited, state}
+  end
+
+  def handle_info({:EXIT, _pid, :normal}, state), do: {:stop, :EXIT, state}
 
   def handle_info(message, state) do
     Logger.warn("Unknown message received #{inspect(message)}")
     {:noreply, state}
+  end
+
+  def terminate(_, %__MODULE__{channel: nil}), do: nil
+
+  def terminate(_, %__MODULE__{channel: channel}) do
+    if Process.alive?(channel.pid) do
+      Channel.close(channel)
+    end
   end
 
   def handle_call(_msg, _from, %{channel: nil}) do
@@ -107,14 +137,6 @@ defmodule Amqpx.Producer do
     end
   end
 
-  def terminate(_, %__MODULE__{channel: channel}) do
-    with %Channel{conn: %Connection{pid: pid} = conn} <- channel do
-      if Process.alive?(pid) do
-        Connection.close(conn)
-      end
-    end
-  end
-
   # Private functions
 
   @spec confirm_delivery(boolean(), integer(), Channel.t()) :: boolean() | :timeout
@@ -122,30 +144,6 @@ defmodule Amqpx.Producer do
 
   defp confirm_delivery(true, timeout, channel) do
     Confirm.wait_for_confirms(channel, timeout)
-  end
-
-  @spec broker_connect(state()) :: state()
-  defp broker_connect(
-         %{
-           publisher_confirms: publisher_confirms,
-           connection_params: connection_params,
-           exchanges: exchanges
-         } = state
-       ) do
-    {:ok, connection} = Connection.open(connection_params)
-    Process.monitor(connection.pid)
-
-    {:ok, channel} = Channel.open(connection)
-    Process.monitor(channel.pid)
-    state = %{state | channel: channel}
-
-    declare_exchanges(exchanges, channel)
-
-    if publisher_confirms do
-      Confirm.select(channel)
-    end
-
-    state
   end
 
   defp declare_exchanges(exchanges, channel) do
