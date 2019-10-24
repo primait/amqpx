@@ -11,9 +11,9 @@ services:
 
   rabbit:
     image: rabbitmq:3-management
-    environment:
-      RABBITMQ_DEFAULT_VHOST: amqpx
-      RABBITMQ_DEFAULT_USER: amqpx
-      RABBITMQ_DEFAULT_PASS: amqpx
+    # environment:
+    #   RABBITMQ_DEFAULT_VHOST: amqpx
+    #   RABBITMQ_DEFAULT_USER: amqpx
+    #   RABBITMQ_DEFAULT_PASS: amqpx
     ports:
       - "23555:15672"
