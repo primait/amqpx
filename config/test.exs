@@ -8,10 +8,10 @@ config :logger, level: :error
 
 config :amqpx,
   amqp_connection: [
-    username: "amqpx",
-    password: "amqpx",
+    username: "guest",
+    password: "guest",
     host: "rabbit",
-    virtual_host: "amqpx",
+    virtual_host: "/",
     heartbeat: 30,
     connection_timeout: 10_000
   ]

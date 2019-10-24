@@ -1,7 +1,6 @@
 defmodule Amqpx.Test.AmqpxTest do
   use ExUnit.Case
   alias Amqpx.Test.Support.{Consumer1, Consumer2, Producer1, Producer2, Producer3}
-  alias Amqpx.Helper
   import Mock
 
   setup_all do
@@ -11,8 +10,7 @@ defmodule Amqpx.Test.AmqpxTest do
 
     Amqpx.Gen.Producer.start_link(Application.get_env(:amqpx, :producer))
 
-    Application.get_env(:amqpx, :consumers)
-    |> Enum.each(&Amqpx.Gen.Consumer.start_link(&1))
+    Enum.each(Application.get_env(:amqpx, :consumers), &Amqpx.Gen.Consumer.start_link(&1))
 
     :timer.sleep(1_000)
     :ok

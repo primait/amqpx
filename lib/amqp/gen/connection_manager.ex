@@ -15,7 +15,7 @@ defmodule Amqpx.Gen.ConnectionManager do
   @type state() :: %__MODULE__{}
 
   def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, name: AmqpxConnectionManager)
+    GenServer.start_link(__MODULE__, opts, name: Amqpx.Gen.ConnectionManager)
   end
 
   def init(opts) do
