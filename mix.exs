@@ -5,7 +5,7 @@ defmodule Amqpx.MixProject do
     [
       app: :amqpx,
       name: "amqpx",
-      version: "5.2.0",
+      version: "5.2.0-rc.1",
       elixir: "~> 1.7",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :production,
@@ -54,9 +54,7 @@ defmodule Amqpx.MixProject do
       {:credo, "~> 1.1", only: [:dev, :test]},
       {:mock, "~> 0.3.0", only: :test},
       {:dialyxir, "~> 1.0.0-rc", only: [:dev, :test], runtime: false},
-      {:earmark, "~> 1.0", only: :docs},
-      {:ex_doc, "~> 0.15", only: :docs},
-      {:inch_ex, "~> 0.5", only: :docs}
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
 
