@@ -1,6 +1,6 @@
 defmodule Amqpx.Gen.ConnectionManager do
   @moduledoc """
-  Generic implementation of Amqpx consumer
+  Handle connection for all consumers and producer
   """
   require Logger
   use GenServer

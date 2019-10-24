@@ -2,7 +2,7 @@ Amqpx
 =========
 
 ## About
-A simple Amqpx library based on [official elixir amqp client](https://hex.pm/packages/amqp)
+A simple Amqp library based on [official elixir amqp client](https://hex.pm/packages/amqp)
 Written to prevent duplicated and boilerplate code to handle all the lifecycle of the amqp connection. Write your publisher or consumer and forget about the rest!
 
 ## Installation
@@ -48,11 +48,11 @@ end
 
 Start consumers and producer manually:
 ```elixir
-Amqpx.ConnectionManager.start_link(%{connection_params: Application.get_env(:myapp, :amqp_connection)})
+Amqpx.Gen.ConnectionManager.start_link(%{connection_params: Application.get_env(:myapp, :amqp_connection)})
 
-Amqpx.Producer.start_link(Application.get_env(:myapp, :producer))
+Amqpx.Gen.Producer.start_link(Application.get_env(:myapp, :producer))
 
-Enum.each(Application.get_env(:myapp, :consumers), &Amqpx.Consumer.start_link(&1))
+Enum.each(Application.get_env(:myapp, :consumers), &Amqpx.Gen.Consumer.start_link(&1))
 ```
 
 ## Sample configuration

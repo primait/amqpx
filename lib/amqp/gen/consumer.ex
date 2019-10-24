@@ -1,6 +1,6 @@
 defmodule Amqpx.Gen.Consumer do
   @moduledoc """
-  Generic implementation of Amqpx consumer
+  Generic implementation of amqp consumer
   """
   require Logger
   use GenServer
