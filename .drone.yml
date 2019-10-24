@@ -6,9 +6,9 @@ services:
   - name: rabbit
     image: rabbitmq:3
     environment:
-        RABBITMQ_DEFAULT_VHOST: amqpx
-        RABBITMQ_DEFAULT_USER: amqpx
-        RABBITMQ_DEFAULT_PASS: amqpx
+        RABBITMQ_DEFAULT_VHOST: /
+        RABBITMQ_DEFAULT_USER: guest
+        RABBITMQ_DEFAULT_PASS: guest
 
 volumes:
   - name: docker

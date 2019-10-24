@@ -4,14 +4,14 @@ config :logger, :console,
   format: "[$level] $message $metadata\n",
   metadata: [:error, :error_message]
 
-config :logger, level: :info
+config :logger, level: :error
 
 config :amqpx,
-  connection_params: [
-    username: "amqpx",
-    password: "amqpx",
+  amqp_connection: [
+    username: "guest",
+    password: "guest",
     host: "rabbit",
-    virtual_host: "amqpx",
+    virtual_host: "/",
     heartbeat: 30,
     connection_timeout: 10_000
   ]
