@@ -10,7 +10,7 @@ Written to prevent duplicated and boilerplate code to handle all the lifecycle o
 ```elixir
 def deps do
   [
-    {:amqpx, "~> 5.1"}
+    {:amqpx, "~> 5.2"}
   ]
 end
 ```
@@ -137,7 +137,7 @@ defmodule Myapp.Consumer do
   def setup(channel) do
     # here you can declare your queues and exchanges
     Helper.declare(channel, @config)
-    Basic.consume(channel, @queue) # Don't forget to start consuming here!
+    Basic.consume(channel, @queue, self()) # Don't forget to start consuming here!
 
     {:ok, %{}}
   end
