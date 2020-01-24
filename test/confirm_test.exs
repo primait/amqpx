@@ -46,4 +46,16 @@ defmodule ConfirmTest do
       refute_receive {:basic_ack, 1, false}
     end
   end
+
+  describe "register_return_handler" do
+  end
+
+  describe "unregister_return_handler" do
+  end
+
+  describe "register_flow_handler" do
+  end
+
+  describe "unregister_flow_handler" do
+  end
 end
