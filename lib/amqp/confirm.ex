@@ -60,7 +60,7 @@ defmodule Amqpx.Confirm do
   end
 
   @doc """
-  Register a handler for confirms on channel.
+  This registers a handler for confirms on channel.
   The handler will receive either:
   * `{:basic_ack, seqno, multiple}`
   * `{:basic_nack, seqno, multiple}`
@@ -75,9 +75,7 @@ defmodule Amqpx.Confirm do
   end
 
   @doc """
-  Remove the confirm handler.
-
-  Removes the return handler, if it exists. Does nothing if there is no
+  This removes the confirm handler, if it exists. Does nothing if there is no
   such handler.
   """
   @spec unregister_confirm_handler(Channel.t()) :: :ok
@@ -94,13 +92,28 @@ defmodule Amqpx.Confirm do
   end
 
   @doc """
-  Remove the return handler.
-
-  Removes the return handler, if it exists. Does nothing if there is no
+  This removes the return handler, if it exists. Does nothing if there is no
   such handler.
   """
   @spec unregister_return_handler(Channel.t()) :: :ok
   def unregister_return_handler(%Channel{pid: pid}) do
     :amqp_channel.unregister_return_handler(pid)
+  end
+
+  @doc """
+  This registers a handler to deal with channel flow notifications.
+  """
+  @spec register_flow_handler(Channel.t(), pid) :: :ok
+  def register_flow_handler(%Channel{pid: chan_pid}, handler_pid) do
+    :amqp_channel.register_flow_handler(chan_pid, handler_pid)
+  end
+
+  @doc """
+  This removes the flow handler, if it exists. Does nothing if there is no
+  such handler.
+  """
+  @spec unregister_flow_handler(Channel.t()) :: :ok
+  def unregister_flow_handler(%Channel{pid: pid}) do
+    :amqp_channel.unregister_flow_handler(pid)
   end
 end
