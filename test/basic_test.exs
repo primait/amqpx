@@ -2,7 +2,6 @@ defmodule BasicTest do
   use ExUnit.Case
 
   alias Amqpx.{Basic, Connection, Channel, Queue}
-  # alias Channel.ReceiverManager
 
   setup do
     {:ok, conn} = Connection.open(Application.get_env(:amqpx, :amqp_connection))

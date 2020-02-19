@@ -37,7 +37,7 @@ defmodule Amqpx.MixProject do
       check: [
         "format --check-formatted mix.exs \"lib/**/*.{ex,exs}\" \"test/**/*.{ex,exs}\" \"priv/**/*.{ex,exs}\" \"config/**/*.{ex,exs}\"",
         "credo",
-        "dialyzer --halt-exit-status"
+        "dialyzer"
       ],
       "format.all": [
         "format mix.exs \"lib/**/*.{ex,exs}\" \"test/**/*.{ex,exs}\" \"priv/**/*.{ex,exs}\" \"config/**/*.{ex,exs}\""
