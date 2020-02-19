@@ -2,8 +2,7 @@ defmodule Amqpx.Test.Support.Consumer1 do
   @moduledoc nil
   @behaviour Amqpx.Gen.Consumer
 
-  alias Amqpx.Basic
-  alias Amqpx.Helper
+  alias Amqpx.{Basic, Helper}
 
   @config Application.get_env(:amqpx, __MODULE__)
   @queue Application.get_env(:amqpx, __MODULE__)[:queue]

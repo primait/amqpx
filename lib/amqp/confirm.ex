@@ -52,7 +52,7 @@ defmodule Amqpx.Confirm do
 
   @doc """
   On channel with confirm activated, return the next message sequence number.
-  To use in combination with `register_handler/2`
+  To use in combination with `register_confirm_handler/2`
   """
   @spec next_publish_seqno(Channel.t()) :: non_neg_integer
   def next_publish_seqno(%Channel{pid: pid}) do
@@ -60,7 +60,7 @@ defmodule Amqpx.Confirm do
   end
 
   @doc """
-  Register a handler for confirms on channel.
+  This registers a handler for confirms on channel.
   The handler will receive either:
   * `{:basic_ack, seqno, multiple}`
   * `{:basic_nack, seqno, multiple}`
@@ -69,20 +69,51 @@ defmodule Amqpx.Confirm do
   `multiple` is a boolean, when `true` means multiple messages confirm, upto `seqno`.
   see https://www.rabbitmq.com/confirms.html
   """
-  @spec register_handler(Channel.t(), pid) :: :ok
-  def register_handler(%Channel{pid: chan_pid}, handler_pid) do
+  @spec register_confirm_handler(Channel.t(), pid) :: :ok
+  def register_confirm_handler(%Channel{pid: chan_pid}, handler_pid) do
     :amqp_channel.register_confirm_handler(chan_pid, handler_pid)
   end
 
   @doc """
-  Remove the return handler.
-
-  It does nothing if there is no such handler.
+  This removes the confirm handler, if it exists. Does nothing if there is no
+  such handler.
   """
-  @spec unregister_handler(Channel.t()) :: :ok
-  def unregister_handler(%Channel{pid: pid}) do
-    # Currently we don't remove the receiver.
-    # The receiver will be deleted automatically when channel is closed.
+  @spec unregister_confirm_handler(Channel.t()) :: :ok
+  def unregister_confirm_handler(%Channel{pid: pid}) do
     :amqp_channel.unregister_confirm_handler(pid)
+  end
+
+  @doc """
+  This registers a handler to deal with returned messages.
+  """
+  @spec register_return_handler(Channel.t(), pid) :: :ok
+  def register_return_handler(%Channel{pid: chan_pid}, handler_pid) do
+    :amqp_channel.register_return_handler(chan_pid, handler_pid)
+  end
+
+  @doc """
+  This removes the return handler, if it exists. Does nothing if there is no
+  such handler.
+  """
+  @spec unregister_return_handler(Channel.t()) :: :ok
+  def unregister_return_handler(%Channel{pid: pid}) do
+    :amqp_channel.unregister_return_handler(pid)
+  end
+
+  @doc """
+  This registers a handler to deal with channel flow notifications.
+  """
+  @spec register_flow_handler(Channel.t(), pid) :: :ok
+  def register_flow_handler(%Channel{pid: chan_pid}, handler_pid) do
+    :amqp_channel.register_flow_handler(chan_pid, handler_pid)
+  end
+
+  @doc """
+  This removes the flow handler, if it exists. Does nothing if there is no
+  such handler.
+  """
+  @spec unregister_flow_handler(Channel.t()) :: :ok
+  def unregister_flow_handler(%Channel{pid: pid}) do
+    :amqp_channel.unregister_flow_handler(pid)
   end
 end
