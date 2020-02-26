@@ -62,6 +62,7 @@ defmodule Amqpx.Helper do
   def setup_dead_lettering(channel, %{queue: dlq, exchange: exchange}) do
     Exchange.declare(channel, exchange, :topic, durable: true)
     Queue.declare(channel, dlq, durable: true)
+    Queue.bind(channel, dlq, exchange, routing_key: "#")
   end
 
   def setup_queue(channel, %{
