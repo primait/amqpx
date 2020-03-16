@@ -14,4 +14,4 @@ mix hex.config api_key $HEX_AUTH_KEY
 mix hex.user whoami
 
 # Publish
-mix hex.publish --yes --dry-run
+mix hex.publish --yes
