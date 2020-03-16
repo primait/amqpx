@@ -1,9 +1,5 @@
 #!/bin/bash
 
-#
-# Workaround due to unsupported non-interactive publish process
-#
-
 # Create temporary version file
 echo "$DRONE_TAG" > VERSION
 
