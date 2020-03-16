@@ -5,7 +5,7 @@ defmodule Amqpx.MixProject do
     [
       app: :amqpx,
       name: "amqpx",
-      version: "5.3.1",
+      version: version(),
       elixir: "~> 1.7",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :production,
@@ -69,5 +69,13 @@ defmodule Amqpx.MixProject do
 
   def description do
     "Fork of the AMQP library with some improvements and facilities"
+  end
+
+  defp version do
+    if File.exists?("VERSION") do
+      String.trim(File.read!("VERSION"))
+    else
+      "0.1.0"
+    end
   end
 end

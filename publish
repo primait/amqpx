@@ -1,0 +1,17 @@
+#!/bin/bash
+
+#
+# Workaround due to unsupported non-interactive publish process
+#
+
+# Create temporary version file
+echo "$DRONE_TAG" > VERSION
+
+# Authentication
+mix hex.config api_key $HEX_AUTH_KEY
+
+# Verify
+mix hex.user whoami
+
+# Publish
+mix hex.publish --yes --dry-run

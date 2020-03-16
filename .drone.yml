@@ -6,9 +6,9 @@ services:
   - name: rabbit
     image: rabbitmq:3
     environment:
-        RABBITMQ_DEFAULT_VHOST: /
-        RABBITMQ_DEFAULT_USER: guest
-        RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_VHOST: /
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
 
 volumes:
   - name: docker
@@ -95,6 +95,21 @@ steps:
       - mix test
     depends_on:
       - compile-test
+
+  - name: publish
+    image: prima/amqpx-ci:1
+    environment:
+      MIX_ENV: dev
+      HEX_AUTH_KEY:
+        from_secret: hex_auth_key
+    commands:
+      - mix compile
+      - ./publish
+    depends_on:
+      - test
+    when:
+      event:
+        - tag
 
   - name: cache-save
     image: prima/drone-tools:1.15.0
