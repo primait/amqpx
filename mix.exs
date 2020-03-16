@@ -72,10 +72,12 @@ defmodule Amqpx.MixProject do
   end
 
   defp version do
-    if File.exists?("VERSION") do
-      String.trim(File.read!("VERSION"))
-    else
-      "0.1.0"
+    drone_tag = System.get_env("DRONE_TAG")
+
+    case drone_tag do
+      "" -> "0.0.0-dev"
+      nil -> "0.0.0-dev"
+      _ -> drone_tag
     end
   end
 end

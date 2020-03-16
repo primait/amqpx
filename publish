@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# Create temporary version file
-echo "$DRONE_TAG" > VERSION
+set -e
 
 # Authentication
 mix hex.config api_key $HEX_AUTH_KEY
