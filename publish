@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -e
+
+# Authentication
+mix hex.config api_key $HEX_AUTH_KEY
+
+# Verify
+mix hex.user whoami
+
+# Publish
+mix hex.publish --yes

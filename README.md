@@ -1,6 +1,9 @@
 Amqpx
 =========
 
+[![Hex pm](http://img.shields.io/hexpm/v/amqpx.svg?style=flat)](https://hex.pm/packages/amqpx)
+[![Build Status](https://drone-1.prima.it/api/badges/primait/amqpx/status.svg)](https://drone-1.prima.it/primait/amqpx)
+
 ## About
 A simple Amqp library based on [official elixir amqp client](https://hex.pm/packages/amqp)
 Written to prevent duplicated and boilerplate code to handle all the lifecycle of the amqp connection. Write your publisher or consumer and forget about the rest!
