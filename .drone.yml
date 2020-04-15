@@ -83,7 +83,7 @@ steps:
     environment:
       MIX_ENV: test
     commands:
-      - mix dialyzer --halt-exit-status
+      - mix dialyzer
     depends_on:
       - compile-test
 
