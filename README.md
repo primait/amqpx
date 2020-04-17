@@ -162,7 +162,7 @@ defmodule Myapp.Producer do
   alias Amqpx.Gen.Producer
 
   def send_payload(payload) do
-    Producer.publish("my_exchange", "my_queue", payload)
+    Producer.publish("my_exchange", "my_exchange_routing_key", payload)
   end
 end
 ```
