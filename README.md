@@ -67,6 +67,7 @@ config :myapp,
     username: "amqpx",
     password: "amqpx",
     host: "rabbit",
+    port: 5_000,
     virtual_host: "amqpx",
     heartbeat: 30,
     connection_timeout: 10_000
@@ -84,16 +85,17 @@ WARNING: headers exchange binding not supported by library helpers functions
 config :myapp,
   consumers: [
     %{
-      handler_module: Your.Handler.Module,
+      handler_module: Myapp.Consumer,
       prefetch_count: 100,
       backoff: 10_000
     }
+  ]
 
-config :myapp, Your.Handler.Module, %{
+config :myapp, Myapp.Consumer, %{
     queue: "my_queue",
     exchanges: [
       %{name: "amq.topic", type: :topic, routing_keys: ["my.routing_key1","my.routing_key2"], opts: [durable: true]},
-      %{name: "my_exchange", type: :direct, routing_keys: ["my_queue"]},
+      %{name: "my_exchange", type: :direct, routing_keys: ["my_queue"], opts: [durable: true]},
       %{name: "my_exchange_fanout", type: :fanout, opts: [durable: true]}
     ],
     opts: [
@@ -117,7 +119,7 @@ You can also declare exchanges from the producer module, simply specify them in 
 ```elixir
 config :myapp, :producer, %{
   publisher_confirms: false,
-  publish_timeout: 0.
+  publish_timeout: 0,
   exchanges: [
     %{name: "my_exchange", type: :direct, opts: [durable: true]}
   ]
@@ -134,8 +136,8 @@ defmodule Myapp.Consumer do
   alias Amqpx.Basic
   alias Amqpx.Helper
 
-  @config Application.get_env(:amqpx, __MODULE__)
-  @queue Application.get_env(:amqpx, __MODULE__)[:queue]
+  @config Application.get_env(:myapp, __MODULE__)
+  @queue Application.get_env(:myapp, __MODULE__)[:queue]
 
   def setup(channel) do
     # here you can declare your queues and exchanges
@@ -146,7 +148,7 @@ defmodule Myapp.Consumer do
   end
 
   def handle_message(payload, meta, state) do
-    IO.inspect("payload: #{inspect(payload)}, metadata: #{meta}")
+    IO.inspect("payload: #{inspect(payload)}, metadata: #{inspect(meta)}")
     {:ok, state}
   end
 end
@@ -160,7 +162,7 @@ defmodule Myapp.Producer do
   alias Amqpx.Gen.Producer
 
   def send_payload(payload) do
-    Producer.publish("myexchange", "my.routing_key", payload)
+    Producer.publish("my_exchange", "my_exchange_routing_key", payload)
   end
 end
 ```
