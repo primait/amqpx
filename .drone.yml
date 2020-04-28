@@ -103,7 +103,6 @@ steps:
       HEX_AUTH_KEY:
         from_secret: hex_auth_key
     commands:
-      - sed -i "s/0.0.0-dev/$DRONE_TAG/g" mix.exs
       - mix compile
       - ./publish
     depends_on:
