@@ -5,7 +5,7 @@ defmodule Amqpx.MixProject do
     [
       app: :amqpx,
       name: "amqpx",
-      version: version(),
+      version: "5.3.3",
       elixir: "~> 1.7",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :production,
@@ -69,15 +69,5 @@ defmodule Amqpx.MixProject do
 
   def description do
     "Fork of the AMQP library with some improvements and facilities"
-  end
-
-  defp version do
-    drone_tag = System.get_env("DRONE_TAG")
-
-    case drone_tag do
-      "" -> "0.0.0-dev"
-      nil -> "0.0.0-dev"
-      _ -> drone_tag
-    end
   end
 end
