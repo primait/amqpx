@@ -46,7 +46,7 @@ steps:
   depends_on:
   - cache-restore
 
-- name: init
+- name: elixir-dependencies
   image: prima/amqpx-ci:1
   commands:
   - mix deps.get
@@ -60,7 +60,7 @@ steps:
   environment:
     MIX_ENV: test
   depends_on:
-  - init
+  - elixir-dependencies
 
 - name: elixir-format
   image: prima/amqpx-ci:1
@@ -80,7 +80,7 @@ steps:
   depends_on:
   - elixir-compile
 
-- name: credo
+- name: elixir-credo
   image: prima/amqpx-ci:1
   commands:
   - mix credo -a
@@ -89,7 +89,7 @@ steps:
   depends_on:
   - elixir-compile
 
-- name: dialyzer
+- name: elixir-dialyzer
   image: prima/amqpx-ci:1
   commands:
   - mix dialyzer
@@ -115,8 +115,8 @@ steps:
   - elixir-compile
   - elixir-format
   - elixir-test
-  - credo
-  - dialyzer
+  - elixir-credo
+  - elixir-dialyzer
 
 services:
 - name: rabbit
@@ -316,6 +316,6 @@ depends_on:
 
 ---
 kind: signature
-hmac: d5500fe5e67db00d27d3cfe596dee7656a4b069ce586070f7385029690ebf141
+hmac: a0ba8299fbbfccdaf352fea8d1e9815df2f1f5b839d0856d8d8e2373642b88c2
 
 ...
