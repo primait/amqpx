@@ -2,156 +2,320 @@
 kind: pipeline
 name: default
 
-services:
-  - name: rabbit
-    image: rabbitmq:3
-    environment:
-      RABBITMQ_DEFAULT_VHOST: /
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-
-volumes:
-  - name: docker
-    host:
-      path: /var/run/docker.sock
-  - name: ecs
-    host:
-      path: /etc/profile.d/ecs-credentials-endpoint
+platform:
+  os: linux
+  arch: amd64
 
 clone:
   depth: 1
 
 steps:
-  - name: cache-restore
-    image: prima/drone-tools:1.15.0
-    volumes:
-      - name: ecs
-        path: /etc/profile.d/ecs-credentials-endpoint
-      - name: docker
-        path: /var/run/docker.sock
-    commands:
-      - . /etc/profile.d/ecs-credentials-endpoint
-      - cache-restore
+- name: pre-start
+  image: prima/drone-tools:1.17.6
+  commands:
+  - pre-start-scripts
 
-  - name: build-image
-    image: prima/drone-tools:1.15.0
-    volumes:
-      - name: docker
-        path: /var/run/docker.sock
-    commands:
-      - sed -i 's/USER app/USER root/g' Dockerfile
-      - docker build -t prima/amqpx-ci:1 .
-    depends_on:
-      - cache-restore
+- name: cache-restore
+  image: prima/drone-tools:1.17.6
+  commands:
+  - . /etc/profile.d/ecs-credentials-endpoint
+  - cache-restore
+  volumes:
+  - name: ecs
+    path: /etc/profile.d/ecs-credentials-endpoint
+  - name: docker
+    path: /var/run/docker.sock
 
-  - name: init
-    image: prima/amqpx-ci:1
-    commands:
-      - mix deps.get
-    depends_on:
-      - build-image
+- name: check-secrets
+  image: prima/drone-tools:1.17.6
+  commands:
+  - . /etc/profile.d/ecs-credentials-endpoint
+  - check-secrets-grants
+  volumes:
+  - name: ecs
+    path: /etc/profile.d/ecs-credentials-endpoint
 
-  - name: compile-test
-    image: prima/amqpx-ci:1
-    environment:
-      MIX_ENV: test
-    commands:
-      - mix compile --all-warnings --ignore-module-conflict --warnings-as-errors --debug-info
-    depends_on:
-      - init
+- name: build-image
+  image: prima/drone-tools:1.17.6
+  commands:
+  - sed -i 's/USER app/USER root/g' ./Dockerfile
+  - docker build -t prima/amqpx-ci:1 ./
+  volumes:
+  - name: docker
+    path: /var/run/docker.sock
+  depends_on:
+  - cache-restore
 
-  - name: format
-    image: prima/amqpx-ci:1
-    environment:
-      MIX_ENV: test
-    commands:
-      - mix format --check-formatted mix.exs "lib/**/*.{ex,exs}" "test/**/*.{ex,exs}" "priv/**/*.{ex,exs}" "config/**/*.{ex,exs}"
-    depends_on:
-      - compile-test
+- name: elixir-dependencies
+  image: prima/amqpx-ci:1
+  commands:
+  - mix deps.get
+  depends_on:
+  - build-image
 
-  - name: credo
-    image: prima/amqpx-ci:1
-    environment:
-      MIX_ENV: test
-    commands:
-      - mix credo
-    depends_on:
-      - compile-test
+- name: elixir-compile
+  image: prima/amqpx-ci:1
+  commands:
+  - mix compile --all-warnings --warnings-as-errors --ignore-module-conflict --debug-info
+  environment:
+    MIX_ENV: test
+  depends_on:
+  - elixir-dependencies
 
-  - name: dyalizer
-    image: prima/amqpx-ci:1
-    environment:
-      MIX_ENV: test
-    commands:
-      - mix dialyzer
-    depends_on:
-      - compile-test
+- name: elixir-format
+  image: prima/amqpx-ci:1
+  commands:
+  - mix format --check-formatted mix.exs "lib/**/*.{ex,exs}" "test/**/*.{ex,exs}" "config/**/*.{ex,exs}"
+  environment:
+    MIX_ENV: test
+  depends_on:
+  - elixir-compile
 
-  - name: test
-    image: prima/amqpx-ci:1
-    environment:
-      MIX_ENV: test
-    commands:
-      - mix test
-    depends_on:
-      - compile-test
+- name: elixir-test
+  image: prima/amqpx-ci:1
+  commands:
+  - mix test
+  environment:
+    MIX_ENV: test
+  depends_on:
+  - elixir-compile
 
-  - name: publish
-    image: prima/amqpx-ci:1
-    environment:
-      MIX_ENV: dev
-      HEX_AUTH_KEY:
-        from_secret: hex_auth_key
-    commands:
-      - mix compile
-      - ./publish
-    depends_on:
-      - test
-    when:
-      event:
-        - tag
+- name: elixir-credo
+  image: prima/amqpx-ci:1
+  commands:
+  - mix credo -a
+  environment:
+    MIX_ENV: test
+  depends_on:
+  - elixir-compile
 
-  - name: cache-save
-    image: prima/drone-tools:1.15.0
-    volumes:
-      - name: ecs
-        path: /etc/profile.d/ecs-credentials-endpoint
-      - name: docker
-        path: /var/run/docker.sock
-    commands:
-      - . /etc/profile.d/ecs-credentials-endpoint
-      - cache-save _build deps
-    depends_on:
-      - format
-      - credo
-      - dyalizer
-      - test
-    when:
-      branch:
-        - master
+- name: elixir-dialyzer
+  image: prima/amqpx-ci:1
+  commands:
+  - mix dialyzer
+  environment:
+    MIX_ENV: test
+  depends_on:
+  - elixir-compile
+
+- name: cache-save
+  image: prima/drone-tools:1.17.6
+  commands:
+  - . /etc/profile.d/ecs-credentials-endpoint
+  - cache-save _build deps
+  volumes:
+  - name: ecs
+    path: /etc/profile.d/ecs-credentials-endpoint
+  - name: docker
+    path: /var/run/docker.sock
+  when:
+    branch:
+    - master
+  depends_on:
+  - elixir-compile
+  - elixir-format
+  - elixir-test
+  - elixir-credo
+  - elixir-dialyzer
+
+services:
+- name: rabbit
+  image: rabbitmq:3
+  environment:
+    RABBITMQ_DEFAULT_PASS: guest
+    RABBITMQ_DEFAULT_USER: guest
+    RABBITMQ_DEFAULT_VHOST: /
+
+volumes:
+- name: docker
+  host:
+    path: /var/run/docker.sock
+- name: ecs
+  host:
+    path: /etc/profile.d/ecs-credentials-endpoint
+
+trigger:
+  event:
+  - push
 
 ---
 kind: pipeline
-name: notify
+name: deploy
+
+platform:
+  os: linux
+  arch: amd64
+
+clone:
+  depth: 1
+
+steps:
+- name: pre-start
+  image: prima/drone-tools:1.17.6
+  commands:
+  - pre-start-scripts
+
+- name: cache-restore
+  image: prima/drone-tools:1.17.6
+  commands:
+  - . /etc/profile.d/ecs-credentials-endpoint
+  - cache-restore
+  volumes:
+  - name: ecs
+    path: /etc/profile.d/ecs-credentials-endpoint
+  - name: docker
+    path: /var/run/docker.sock
+
+- name: check-secrets
+  image: prima/drone-tools:1.17.6
+  commands:
+  - . /etc/profile.d/ecs-credentials-endpoint
+  - check-secrets-grants
+  volumes:
+  - name: ecs
+    path: /etc/profile.d/ecs-credentials-endpoint
+
+- name: build-image
+  image: prima/drone-tools:1.17.6
+  commands:
+  - sed -i 's/USER app/USER root/g' ./Dockerfile
+  - docker build -t prima/amqpx-ci:1 ./
+  volumes:
+  - name: docker
+    path: /var/run/docker.sock
+  depends_on:
+  - cache-restore
+
+- name: deploy-production
+  image: prima/amqpx-ci:1
+  commands:
+  - . /etc/profile.d/ecs-credentials-endpoint
+  - ./deploy/deploy production ${DRONE_TAG}
+  environment:
+    HEX_AUTH_KEY:
+      from_secret: hex_auth_key
+    MIX_ENV: dev
+  volumes:
+  - name: ecs
+    path: /etc/profile.d/ecs-credentials-endpoint
+  depends_on:
+  - check-secrets
+  - build-image
+
+- name: wait-for-stack-production
+  image: prima/drone-tools:1.17.6
+  commands:
+  - . /etc/profile.d/ecs-credentials-endpoint
+  - ./deploy/wait_for_stack production ${DRONE_TAG}
+  volumes:
+  - name: ecs
+    path: /etc/profile.d/ecs-credentials-endpoint
+  depends_on:
+  - deploy-production
+
+volumes:
+- name: docker
+  host:
+    path: /var/run/docker.sock
+- name: ecs
+  host:
+    path: /etc/profile.d/ecs-credentials-endpoint
+
+trigger:
+  event:
+  - tag
+
+---
+kind: pipeline
+name: email-failure
+
+platform:
+  os: linux
+  arch: amd64
 
 clone:
   disable: true
 
 steps:
-  - name: notify_email
-    image: drillster/drone-email
-    environment:
-      PLUGIN_USERNAME:
-        from_secret: email_username
-      PLUGIN_PASSWORD:
-        from_secret: email_password
-    settings:
-      host: email-smtp.eu-west-1.amazonaws.com
-      from: noreply@prima.it
+- name: email-failure
+  image: drillster/drone-email
+  settings:
+    from: noreply@prima.it
+    host: email-smtp.eu-west-1.amazonaws.com
+  environment:
+    PLUGIN_PASSWORD:
+      from_secret: email_password
+    PLUGIN_USERNAME:
+      from_secret: email_username
 
 trigger:
   status:
-    - failure
+  - failure
 
 depends_on:
-  - default
+- default
+- deploy
+
+---
+kind: pipeline
+name: notify-failure-production
+
+platform:
+  os: linux
+  arch: amd64
+
+clone:
+  disable: true
+
+steps:
+- name: slack-failure
+  image: plugins/slack
+  settings:
+    channel: deploy
+    template: "{{repo.name}} release {{build.tag}} fallita: {{build.link}}"
+    webhook:
+      from_secret: slack_deploy_alert_webhook
+
+trigger:
+  event:
+  - tag
+  status:
+  - failure
+
+depends_on:
+- deploy
+
+---
+kind: pipeline
+name: notify-success-production
+
+platform:
+  os: linux
+  arch: amd64
+
+clone:
+  disable: true
+
+steps:
+- name: slack-success
+  image: plugins/slack
+  settings:
+    channel: deploy
+    template: "{{repo.name}} release {{build.tag}} completata: {{build.link}}"
+    webhook:
+      from_secret: slack_deploy_alert_webhook
+
+trigger:
+  event:
+  - tag
+  status:
+  - success
+
+depends_on:
+- deploy
+
+---
+kind: signature
+hmac: a0ba8299fbbfccdaf352fea8d1e9815df2f1f5b839d0856d8d8e2373642b88c2
+
+...
