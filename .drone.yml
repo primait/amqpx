@@ -259,7 +259,7 @@ depends_on:
 
 ---
 kind: pipeline
-name: notify-failure-production
+name: notify-captainhook-production
 
 platform:
   os: linux
@@ -269,54 +269,25 @@ clone:
   disable: true
 
 steps:
-- name: slack-failure
-  image: plugins/slack
+- name: send
+  image: prima/drone-webhook
   settings:
-    channel: deploy
-    template: "{{repo.name}} release {{build.tag}} fallita: {{build.link}}"
-    webhook:
-      from_secret: slack_deploy_alert_webhook
-
-trigger:
-  event:
-  - tag
-  status:
-  - failure
-
-depends_on:
-- deploy
-
----
-kind: pipeline
-name: notify-success-production
-
-platform:
-  os: linux
-  arch: amd64
-
-clone:
-  disable: true
-
-steps:
-- name: slack-success
-  image: plugins/slack
-  settings:
-    channel: deploy
-    template: "{{repo.name}} release {{build.tag}} completata: {{build.link}}"
-    webhook:
-      from_secret: slack_deploy_alert_webhook
+    secret:
+      from_secret: captainhook_secret
+    urls: http://captainhook-internal.prima.it/drone/deploy
 
 trigger:
   event:
   - tag
   status:
   - success
+  - failure
 
 depends_on:
 - deploy
 
 ---
 kind: signature
-hmac: 4a8e84cb0528d220f0b8a2ecc4c87fd28449e10c94f885cd4cda467e205b2959
+hmac: eeb502c0ca9ac974626ddc17ffb114f5f026c7dc94c6b2252cfa487bdf1567d6
 
 ...
