@@ -5,7 +5,7 @@ defmodule Amqpx.Queue do
 
   import Amqpx.Core
 
-  alias Amqpx.{Basic, Channel, Utils, BasicError}
+  alias Amqpx.{Basic, BasicError, Channel, Utils}
 
   @doc """
   Declares a queue. The optional `queue` parameter is used to set the name.

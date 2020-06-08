@@ -29,20 +29,18 @@ defmodule Amqpx.Gen.ConnectionManager do
   end
 
   def handle_info(:setup, %{backoff: backoff} = state) do
-    try do
-      {:noreply, broker_connect(state)}
-    rescue
-      exception in _ ->
-        Logger.error(
-          "Unable to connect to Broker! Retrying with #{backoff}ms backoff. Error: #{
-            inspect(exception)
-          }",
-          error: inspect(exception)
-        )
+    {:noreply, broker_connect(state)}
+  rescue
+    exception in _ ->
+      Logger.error(
+        "Unable to connect to Broker! Retrying with #{backoff}ms backoff. Error: #{
+          inspect(exception)
+        }",
+        error: inspect(exception)
+      )
 
-        :timer.sleep(backoff)
-        {:stop, exception, state}
-    end
+      :timer.sleep(backoff)
+      {:stop, exception, state}
   end
 
   def handle_info({:DOWN, _, :process, _pid, reason}, state) do

@@ -4,7 +4,7 @@ defmodule Amqpx.Gen.Producer do
   """
   require Logger
   use GenServer
-  alias Amqpx.{Channel, Basic, Confirm}
+  alias Amqpx.{Basic, Channel, Confirm, Helper}
 
   @type state() :: %__MODULE__{}
 
@@ -145,7 +145,6 @@ defmodule Amqpx.Gen.Producer do
   end
 
   defp declare_exchanges(exchanges, channel) do
-    exchanges
-    |> Enum.each(&Amqpx.Helper.setup_exchange(channel, &1))
+    Enum.each(exchanges, &Helper.setup_exchange(channel, &1))
   end
 end

@@ -5,7 +5,7 @@ defmodule Amqpx.Gen.Consumer do
   require Logger
   use GenServer
   import Amqpx.Core
-  alias Amqpx.{Channel, Basic}
+  alias Amqpx.{Basic, Channel}
 
   defstruct [
     :channel,
@@ -62,7 +62,7 @@ defmodule Amqpx.Gen.Consumer do
     {:noreply, state}
   end
 
-  # Sent by the broker when the consumer is unexpectedly cancelled (such as after a queue deletion)
+  # Sent by the broker when the consumer is unexpectedly cancelled
   def handle_info({:server_cancel, {:"basic.cancel", _consumer_tag, _nowait}}, state) do
     {:stop, :basic_cancel, state}
   end
@@ -190,20 +190,18 @@ defmodule Amqpx.Gen.Consumer do
            backoff: backoff
          } = state
        ) do
-    try do
-      {:ok, handler_state} = handler_module.handle_message(message, meta, handler_state)
-      Basic.ack(state.channel, tag)
-      %{state | handler_state: handler_state}
-    rescue
-      e in _ ->
-        Logger.error(inspect(e))
+    {:ok, handler_state} = handler_module.handle_message(message, meta, handler_state)
+    Basic.ack(state.channel, tag)
+    %{state | handler_state: handler_state}
+  rescue
+    e in _ ->
+      Logger.error(inspect(e))
 
-        Task.start(fn ->
-          :timer.sleep(backoff)
-          Basic.reject(state.channel, tag, requeue: !redelivered)
-        end)
+      Task.start(fn ->
+        :timer.sleep(backoff)
+        Basic.reject(state.channel, tag, requeue: !redelivered)
+      end)
 
-        state
-    end
+      state
   end
 end
