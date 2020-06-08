@@ -23,12 +23,7 @@ defmodule Amqpx do
 
   defmacro __using__(_opts) do
     quote do
-      alias Amqpx.Connection
-      alias Amqpx.Channel
-      alias Amqpx.Exchange
-      alias Amqpx.Queue
-      alias Amqpx.Basic
-      alias Amqpx.Confirm
+      alias Amqpx.{Basic, Channel, Confirm, Connection, Exchange, Queue}
     end
   end
 end

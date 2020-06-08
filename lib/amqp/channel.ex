@@ -3,7 +3,7 @@ defmodule Amqpx.Channel do
   Functions to operate on Channels.
   """
 
-  alias Amqpx.{Connection, Channel}
+  alias Amqpx.{Channel, Connection}
 
   defstruct [:conn, :pid]
   @type t :: %Channel{conn: Connection.t(), pid: pid}
