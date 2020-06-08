@@ -83,7 +83,7 @@ steps:
 - name: elixir-credo
   image: prima/amqpx-ci:1
   commands:
-  - mix credo -a
+  - mix credo -a --strict
   environment:
     MIX_ENV: test
   depends_on:
@@ -288,6 +288,6 @@ depends_on:
 
 ---
 kind: signature
-hmac: eeb502c0ca9ac974626ddc17ffb114f5f026c7dc94c6b2252cfa487bdf1567d6
+hmac: 9bae1b9c05327e9430dbec4aaef985d618ac204947f4ac5b458ac0ef91dd6f10
 
 ...
