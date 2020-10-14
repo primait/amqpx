@@ -28,19 +28,24 @@ defmodule Amqpx.Gen.ConnectionManager do
     {:reply, connection, state}
   end
 
-  def handle_info(:setup, %{backoff: backoff} = state) do
-    {:noreply, broker_connect(state)}
-  rescue
-    exception in _ ->
-      Logger.error(
-        "Unable to connect to Broker! Retrying with #{backoff}ms backoff. Error: #{
-          inspect(exception)
-        }",
-        error: inspect(exception)
-      )
+  def handle_info(:setup, %{backoff: backoff, connection_params: connection_params} = state) do
+    case connect(connection_params) do
+      {:ok, connection} ->
+        state = %{state | connection: connection}
+        {:noreply, state}
 
-      :timer.sleep(backoff)
-      {:stop, exception, state}
+      error ->
+        Logger.error("Unable to connect to Broker! Retrying with #{backoff}ms backoff",
+          error: error
+        )
+
+        Process.send_after(self(), {:shutdown, error}, backoff, [])
+        {:noreply, state}
+    end
+  end
+
+  def handle_info({:shutdown, reason}, state) do
+    {:stop, reason, state}
   end
 
   def handle_info({:DOWN, _, :process, _pid, reason}, state) do
@@ -64,12 +69,17 @@ defmodule Amqpx.Gen.ConnectionManager do
     end
   end
 
-  @spec broker_connect(state()) :: state()
-  defp broker_connect(%__MODULE__{connection_params: connection_params} = state) do
-    {:ok, connection} = Connection.open(connection_params)
-    state = %{state | connection: connection}
-    Process.monitor(connection.pid)
+  @spec connect(map) :: {:ok, state()}
+  defp connect(connection_params) do
+    try do
+      with {:ok, connection} <- Connection.open(connection_params) do
+        Process.monitor(connection.pid)
 
-    state
+        {:ok, connection}
+      end
+    catch
+      _, reason ->
+        {:error, reason}
+    end
   end
 end
