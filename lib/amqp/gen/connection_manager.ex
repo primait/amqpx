@@ -36,7 +36,7 @@ defmodule Amqpx.Gen.ConnectionManager do
 
       error ->
         Logger.error("Unable to connect to Broker! Retrying with #{backoff}ms backoff",
-          error: error
+          error: inspect(error)
         )
 
         Process.send_after(self(), {:shutdown, error}, backoff, [])
