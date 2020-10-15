@@ -69,17 +69,15 @@ defmodule Amqpx.Gen.ConnectionManager do
     end
   end
 
-  @spec connect(map) :: {:ok, state()}
+  @spec connect(map) :: {:ok, Connection.t()} | {:error, any}
   defp connect(connection_params) do
-    try do
-      with {:ok, connection} <- Connection.open(connection_params) do
-        Process.monitor(connection.pid)
+    with {:ok, connection} <- Connection.open(connection_params) do
+      Process.monitor(connection.pid)
 
-        {:ok, connection}
-      end
-    catch
-      _, reason ->
-        {:error, reason}
+      {:ok, connection}
     end
+  catch
+    _, reason ->
+      {:error, reason}
   end
 end
