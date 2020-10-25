@@ -12,7 +12,9 @@ defmodule Amqpx.Gen.Consumer do
     :handler_module,
     :handler_state,
     prefetch_count: 50,
-    backoff: 5_000
+    backoff: 5_000,
+    requeue: true,
+    requeue_after: 5_000
   ]
 
   @type state() :: %__MODULE__{}
@@ -183,25 +185,52 @@ defmodule Amqpx.Gen.Consumer do
 
   defp handle_message(
          message,
-         %{delivery_tag: tag, redelivered: redelivered} = meta,
+         %{delivery_tag: tag} = meta,
          %__MODULE__{
            handler_module: handler_module,
            handler_state: handler_state,
-           backoff: backoff
+           channel: channel
          } = state
        ) do
-    {:ok, handler_state} = handler_module.handle_message(message, meta, handler_state)
-    Basic.ack(state.channel, tag)
-    %{state | handler_state: handler_state}
+    case handler_module.handle_message(message, meta, handler_state) do
+      {:ok, handler_state} ->
+        Basic.ack(channel, tag)
+        %{state | handler_state: handler_state}
+
+      {:error, _} = error ->
+        Logger.error(inspect(error))
+        reject_message(meta, state)
+
+        state
+    end
   rescue
     e in _ ->
       Logger.error(inspect(e))
-
-      Task.start(fn ->
-        :timer.sleep(backoff)
-        Basic.reject(state.channel, tag, requeue: !redelivered)
-      end)
+      reject_message(meta, state)
 
       state
+  end
+
+  defp reject_message(
+         %{delivery_tag: tag, redelivered: false},
+         %__MODULE__{
+           channel: channel,
+           requeue: true,
+           requeue_after: requeue_after
+         }
+       ) do
+    Task.start(fn ->
+      Process.sleep(requeue_after)
+      Basic.reject(channel, tag, requeue: true)
+    end)
+  end
+
+  defp reject_message(
+         %{delivery_tag: tag},
+         %__MODULE__{
+           channel: channel
+         }
+       ) do
+    Basic.reject(channel, tag)
   end
 end
