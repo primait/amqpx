@@ -78,6 +78,8 @@ config :myapp,
 Default parameters:
 - prefetch_count: 50
 - backoff: 5_000 (connection retry)
+- requeue: true (reject message with `requeue: true` if the message was not already redelivered)
+- requeue_after: 5_000 (wait 5 seconds before requeuing the message)
 
 WARNING: headers exchange binding not supported by library helpers functions
 
@@ -87,7 +89,9 @@ config :myapp,
     %{
       handler_module: Myapp.Consumer,
       prefetch_count: 100,
-      backoff: 10_000
+      backoff: 10_000,
+      requeue: true,
+      requeue_after: 20_000
     }
   ]
 
