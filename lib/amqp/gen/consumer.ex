@@ -203,9 +203,9 @@ defmodule Amqpx.Gen.Consumer do
 
         state
     end
-  rescue
-    e in _ ->
-      Logger.error(inspect(e))
+  catch
+    _, reason ->
+      Logger.error(inspect(reason))
       reject_message(meta, state)
 
       state
