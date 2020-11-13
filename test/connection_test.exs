@@ -25,8 +25,7 @@ defmodule ConnectionTest do
   end
 
   test "open connection with uri, name, and options" do
-    assert {:ok, conn} =
-             Connection.open("amqp://nonexistent:5672", "my-connection", host: 'rabbit')
+    assert {:ok, conn} = Connection.open("amqp://nonexistent:5672", "my-connection", host: 'rabbit')
 
     assert :ok = Connection.close(conn)
   end

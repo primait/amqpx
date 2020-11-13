@@ -367,8 +367,7 @@ defmodule Amqpx.Basic do
   """
   @spec cancel(Channel.t(), String.t(), keyword) :: {:ok, String.t()} | error
   def cancel(%Channel{pid: pid}, consumer_tag, options \\ []) do
-    basic_cancel =
-      basic_cancel(consumer_tag: consumer_tag, nowait: Keyword.get(options, :no_wait, false))
+    basic_cancel = basic_cancel(consumer_tag: consumer_tag, nowait: Keyword.get(options, :no_wait, false))
 
     case :amqp_channel.call(pid, basic_cancel) do
       basic_cancel_ok(consumer_tag: consumer_tag) -> {:ok, consumer_tag}

@@ -27,8 +27,7 @@ defmodule BasicTest do
 
     Basic.publish(meta[:chan], exchange, routing_key, payload, mandatory: true)
 
-    assert_receive {{:"basic.return", 312, "NO_ROUTE", ^exchange, ^routing_key},
-                    {:amqp_msg, _, ^payload}}
+    assert_receive {{:"basic.return", 312, "NO_ROUTE", ^exchange, ^routing_key}, {:amqp_msg, _, ^payload}}
 
     :ok = Basic.cancel_return(meta[:chan])
 
@@ -68,9 +67,7 @@ defmodule BasicTest do
       Basic.publish(meta[:chan], exchange, routing_key, payload, correlation_id: correlation_id)
 
       assert_receive {{:"basic.deliver", ^consumer_tag, _, _, ^exchange, ^routing_key},
-                      {:amqp_msg,
-                       {:P_basic, _, _, _, _, _, ^correlation_id, _, _, _, _, _, _, _, _},
-                       ^payload}}
+                      {:amqp_msg, {:P_basic, _, _, _, _, _, ^correlation_id, _, _, _, _, _, _, _, _}, ^payload}}
 
       {:ok, ^consumer_tag} = Basic.cancel(meta[:chan], consumer_tag)
     end
