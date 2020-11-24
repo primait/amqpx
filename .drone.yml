@@ -144,7 +144,7 @@ steps:
 
 services:
 - name: rabbit
-  image: rabbitmq:3
+  image: 595659439703.dkr.ecr.eu-west-1.amazonaws.com/rabbitmq:3
   environment:
     RABBITMQ_DEFAULT_PASS: guest
     RABBITMQ_DEFAULT_USER: guest
@@ -278,7 +278,7 @@ clone:
 
 steps:
 - name: email-failure
-  image: drillster/drone-email
+  image: 595659439703.dkr.ecr.eu-west-1.amazonaws.com/drone-email
   settings:
     from: noreply@prima.it
     host: email-smtp.eu-west-1.amazonaws.com
@@ -328,6 +328,6 @@ depends_on:
 
 ---
 kind: signature
-hmac: 03916afa9ca8b65e1de44f4753f23c6cd25f1255e5ede5c2f0e3eae1165eaed0
+hmac: 1a3a44053d08e63ee7699411c3742c662a94ed481ba9fd4fccd4ed5e62d524d1
 
 ...
