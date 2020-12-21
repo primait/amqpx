@@ -11,6 +11,7 @@ defmodule Amqpx.Gen.Consumer do
     :channel,
     :handler_module,
     :handler_state,
+    autoack: true,
     prefetch_count: 50,
     backoff: 5_000
   ]
@@ -187,7 +188,8 @@ defmodule Amqpx.Gen.Consumer do
          %__MODULE__{
            handler_module: handler_module,
            handler_state: handler_state,
-           backoff: backoff
+           backoff: backoff,
+           autoack: true
          } = state
        ) do
     {:ok, handler_state} = handler_module.handle_message(message, meta, handler_state)
@@ -201,6 +203,31 @@ defmodule Amqpx.Gen.Consumer do
         :timer.sleep(backoff)
         Basic.reject(state.channel, tag, requeue: !redelivered)
       end)
+
+      state
+  end
+
+  defp handle_message(
+         message,
+         %{delivery_tag: tag, redelivered: redelivered},
+         %__MODULE__{
+           handler_module: handler_module,
+           handler_state: handler_state,
+           autoack: false,
+           channel: channel
+         } = state
+       ) do
+    {:ok, handler_state} =
+      handler_module.handle_message(
+        message,
+        %{tag: tag, redelivered: redelivered, channel: channel},
+        handler_state
+      )
+
+    %{state | handler_state: handler_state}
+  rescue
+    e in _ ->
+      Logger.error(inspect(e))
 
       state
   end
