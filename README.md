@@ -108,6 +108,34 @@ config :myapp, Myapp.Consumer, %{
   }      
 ```
 
+#### Autoack flag
+Amqpx ack the message in the message handler until it return `{:ok, state}` by default. Optionally you can handle yourself the ack/reject using the module `Amqpx.Basic`, avoiding automatic message acknowledge passing the flag `autoack: false` in the configuration:
+
+```elixir
+config :myapp,
+  consumers: [
+    %{
+      handler_module: Myapp.Consumer,
+      prefetch_count: 100,
+      backoff: 10_000,
+      autoack: false
+    }
+  ]
+```
+
+You will find al you need to ack or reject the message in the meta arg of `handle_message` callback.
+```elixir
+def handle_message(payload, %{channel: channel, tag: tag, redelivered: redelivered} = meta, state) do
+  # ...
+  Basic.ack(channel, tag)
+
+  # or reject invoking
+  Basic.reject(channel, tag, requeue: !redelivered)
+end
+```
+
+Take a look to `Amqpx.Basic` for further information.
+
 ### Producers
 Default parameters:
 - publish_timeout: 1_000
