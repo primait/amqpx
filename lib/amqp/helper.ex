@@ -6,8 +6,7 @@ defmodule Amqpx.Helper do
   alias Amqpx.{Exchange, Queue}
 
   def manager_supervisor_configuration(config) do
-    config = Keyword.put(config, :password, :credentials_obfuscation.encrypt(Keyword.get(config, :password)))
-    {Amqpx.Gen.ConnectionManager, %{connection_params: config}}
+    {Amqpx.Gen.ConnectionManager, %{connection_params: set_password(config)}}
   end
 
   def consumers_supervisor_configuration(handlers_conf) do
@@ -16,6 +15,26 @@ defmodule Amqpx.Helper do
 
   def producer_supervisor_configuration(producer_conf) do
     {Amqpx.Gen.Producer, producer_conf}
+  end
+
+  def set_password(config) do
+    case Keyword.get(config, :obfuscate_password, false) do
+      true ->
+        Keyword.put(config, :password, :credentials_obfuscation.encrypt(Keyword.get(config, :password)))
+
+      _ ->
+        config
+    end
+  end
+
+  def get_password(config) do
+    case Keyword.get(config, :obfuscate_password, false) do
+      true ->
+        :credentials_obfuscation.decrypt(Keyword.get(config, :password, "guest"))
+
+      _ ->
+        Keyword.get(config, :password, "guest")
+    end
   end
 
   def declare(
