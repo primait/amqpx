@@ -18,7 +18,7 @@ defmodule Amqpx.Helper do
   end
 
   def set_password(config) do
-    case Keyword.get(config, :obfuscate_password, false) do
+    case Keyword.get(config, :obfuscate_password, true) do
       true ->
         Keyword.put(config, :password, :credentials_obfuscation.encrypt(Keyword.get(config, :password)))
 
@@ -28,7 +28,7 @@ defmodule Amqpx.Helper do
   end
 
   def get_password(config) do
-    case Keyword.get(config, :obfuscate_password, false) do
+    case Keyword.get(config, :obfuscate_password, true) do
       true ->
         :credentials_obfuscation.decrypt(Keyword.get(config, :password, "guest"))
 
