@@ -6,6 +6,7 @@ defmodule Amqpx.Helper do
   alias Amqpx.{Exchange, Queue}
 
   def manager_supervisor_configuration(config) do
+    config = Keyword.put(config, :password, :credentials_obfuscation.encrypt(Keyword.get(config, :password)))
     {Amqpx.Gen.ConnectionManager, %{connection_params: config}}
   end
 

@@ -146,7 +146,7 @@ defmodule Amqpx.Connection do
 
     amqp_params_network(
       username: keys_get(options, params, :username),
-      password: keys_get(options, params, :password),
+      password: :credentials_obfuscation.decrypt(keys_get(options, params, :password)),
       virtual_host: keys_get(options, params, :virtual_host),
       host: options |> keys_get(params, :host) |> to_charlist,
       port: keys_get(options, params, :port),
@@ -169,7 +169,7 @@ defmodule Amqpx.Connection do
   defp merge_options_to_default(options) do
     amqp_params_network(
       username: Keyword.get(options, :username, "guest"),
-      password: Keyword.get(options, :password, "guest"),
+      password: :credentials_obfuscation.decrypt(Keyword.get(options, :password, "guest")),
       virtual_host: Keyword.get(options, :virtual_host, "/"),
       host: options |> Keyword.get(:host, 'localhost') |> to_charlist,
       port: Keyword.get(options, :port, :undefined),
