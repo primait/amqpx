@@ -13,7 +13,8 @@ config :amqpx,
     host: "rabbit",
     virtual_host: "/",
     heartbeat: 30,
-    connection_timeout: 10_000
+    connection_timeout: 10_000,
+    obfuscate_password: false
   ]
 
 config :amqpx,

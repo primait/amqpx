@@ -1,10 +1,10 @@
-Amqpx
-=========
+# Amqpx
 
 [![Hex pm](http://img.shields.io/hexpm/v/amqpx.svg?style=flat)](https://hex.pm/packages/amqpx)
 [![Build Status](https://drone-1.prima.it/api/badges/primait/amqpx/status.svg)](https://drone-1.prima.it/primait/amqpx)
 
 ## About
+
 A simple Amqp library based on [official elixir amqp client](https://hex.pm/packages/amqp)
 Written to prevent duplicated and boilerplate code to handle all the lifecycle of the amqp connection. Write your publisher or consumer and forget about the rest!
 
@@ -13,7 +13,7 @@ Written to prevent duplicated and boilerplate code to handle all the lifecycle o
 ```elixir
 def deps do
   [
-    {:amqpx, "~> 5.3"}
+    {:amqpx, "~> 5.4"}
   ]
 end
 ```
@@ -22,6 +22,7 @@ From 3.0.0 Amqpx is no longer an application. This is so the client can choose i
 You would then need to start your consumers and producer in the client's supervision tree, instead of adding Amqpx to the `extra_application` list as it was in the past.
 
 To start all consumers and producer inside your application, using the library helper function:
+
 ```elixir
 defmodule Application do
   alias Amqpx.Helper
@@ -43,13 +44,14 @@ defmodule Application do
           Application.get_env(:myapp, :consumers)
         )
       )
-    opts = [strategy: :one_for_one, name: Supervisor, max_restarts: 5] # set this accordingly with your consumers count, ex: max_restarts: n_consumer + 5 
+    opts = [strategy: :one_for_one, name: Supervisor, max_restarts: 5] # set this accordingly with your consumers count, ex: max_restarts: n_consumer + 5
     Supervisor.start_link(children, opts)
   end
 end
 ```
 
 Start consumers and producer manually:
+
 ```elixir
 Amqpx.Gen.ConnectionManager.start_link(%{connection_params: Application.get_env(:myapp, :amqp_connection)})
 
@@ -61,6 +63,7 @@ Enum.each(Application.get_env(:myapp, :consumers), &Amqpx.Gen.Consumer.start_lin
 ## Sample configuration
 
 ### Connection
+
 ```elixir
 config :myapp,
   amqp_connection: [
@@ -70,12 +73,15 @@ config :myapp,
     port: 5_000,
     virtual_host: "amqpx",
     heartbeat: 30,
-    connection_timeout: 10_000
+    connection_timeout: 10_000,
+    obfuscate_password: false, # default is true
   ]
 ```
 
 ### Consumers
+
 Default parameters:
+
 - prefetch_count: 50
 - backoff: 5_000 (connection retry)
 
@@ -105,17 +111,19 @@ config :myapp, Myapp.Consumer, %{
         {"x-dead-letter-exchange", :longstr, ""}
       ]
     ]
-  }      
+  }
 ```
 
 ### Producers
+
 Default parameters:
+
 - publish_timeout: 1_000
 - backoff: 5_000 (connection retry)
 - exchanges: []
 
 You can also declare exchanges from the producer module, simply specify them in the configuration. There is an example below.
- 
+
 ```elixir
 config :myapp, :producer, %{
   publisher_confirms: false,
@@ -125,9 +133,11 @@ config :myapp, :producer, %{
   ]
 }
 ```
+
 ## Usage example
 
 ### Consumer
+
 ```elixir
 defmodule Myapp.Consumer do
   @moduledoc nil
@@ -155,6 +165,7 @@ end
 ```
 
 ### Producer
+
 ```elixir
 defmodule Myapp.Producer do
   @moduledoc nil
