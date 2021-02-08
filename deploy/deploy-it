@@ -15,15 +15,6 @@ set -o pipefail
 # print and expand each command to stdout before executing it
 set -o xtrace
 
-if [ $# -eq 0 ]; then
-  echo "Missing required argument: environment"
-  exit 1
-fi
-
-export ENV=$1
-export VERSION="${DRONE_TAG:-$DRONE_COMMIT_SHA}"
-export AWS_DEFAULT_REGION="eu-west-1"
-
 function wait_for_artifact() {
   echo -n "Waiting for artifact"
   while true; do
@@ -32,21 +23,32 @@ function wait_for_artifact() {
       sleep 10
     else
       echo "Artifact ready!"
-      break
+      exit 0
     fi
   done
 }
+
+if [ $# -eq 0 ]; then
+  echo "Missing required argument: environment"
+  exit 1
+fi
+
+export ENV=$1
+export AWS_DEFAULT_REGION="eu-west-1"
+export VERSION="${DRONE_TAG:-$DRONE_COMMIT_SHA}"
 
 if [ "$2" = "--wait-for-artifact" ]; then
   wait_for_artifact
 fi
 
 if [ "${ENV}" = "production" ]; then
+
   set +x
   mix hex.config api_key "$HEX_AUTH_KEY"
   mix hex.user whoami
   mix hex.publish --yes
+
 else
-  echo "${ENV} non supportato!"
+  echo "${ENV} not supported!"
   exit 1
 fi

@@ -276,6 +276,15 @@ steps:
   depends_on:
   - pre-start
 
+- name: captainhook-notification
+  image: 595659439703.dkr.ecr.eu-west-1.amazonaws.com/drone-webhook
+  settings:
+    signature-secret:
+      from_secret: captainhook_secret
+    urls: http://captainhook-internal.prima.it/drone/deploy?rollback=${ROLLBACK}
+  depends_on:
+  - deploy
+
 volumes:
 - name: docker
   host:
@@ -317,10 +326,12 @@ steps:
       from_secret: email_username
 
 trigger:
-  event:
-  - push
   status:
   - failure
+  target:
+    exclude:
+    - qa
+    - qa-stack
 
 depends_on:
 - default
@@ -328,39 +339,7 @@ depends_on:
 - deploy-it-production
 
 ---
-kind: pipeline
-name: notify-captainhook
-
-platform:
-  os: linux
-  arch: amd64
-
-clone:
-  disable: true
-
-steps:
-- name: send
-  image: 595659439703.dkr.ecr.eu-west-1.amazonaws.com/drone-webhook
-  settings:
-    signature-secret:
-      from_secret: captainhook_secret
-    urls: http://captainhook-internal.prima.it/drone/deploy?rollback=${ROLLBACK}
-
-trigger:
-  branch:
-  - master
-  event:
-  - tag
-  - push
-  status:
-  - success
-  - failure
-
-depends_on:
-- deploy-it-production
-
----
 kind: signature
-hmac: bd9b6327d7bb8ea2a575cbd4a428a4199397793fd26f4d245b75a2e856f9fdbe
+hmac: 4372cfbf4d0864a73e3d07825d96fae0b64c61af1bbd10dbcef024530e5f725b
 
 ...
