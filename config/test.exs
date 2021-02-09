@@ -8,8 +8,8 @@ config :logger, level: :error
 
 config :amqpx,
   amqp_connection: [
-    username: "guest",
-    password: "guest",
+    username: "amqpx",
+    password: "amqpx",
     host: "rabbit",
     virtual_host: "/",
     heartbeat: 30,
