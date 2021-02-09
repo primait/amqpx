@@ -143,9 +143,9 @@ services:
 - name: rabbit
   image: public.ecr.aws/bitnami/rabbitmq:3.8
   environment:
-    RABBITMQ_DEFAULT_PASS: guest
-    RABBITMQ_DEFAULT_USER: guest
-    RABBITMQ_DEFAULT_VHOST: /
+    RABBITMQ_PASSWORD: guest
+    RABBITMQ_USERNAME: guest
+    RABBITMQ_VHOST: /
 
 volumes:
 - name: docker
@@ -340,6 +340,6 @@ depends_on:
 
 ---
 kind: signature
-hmac: 551813c69e03ce292ab8cfe26eaea718b6d47b596f844b415e8d2c0743f0bdc2
+hmac: ded88f2e264739732cca2aecce72eb211698931a07e76acd5d2cbc7f4ecb15da
 
 ...
