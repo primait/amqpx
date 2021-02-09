@@ -11,12 +11,12 @@ clone:
 
 steps:
 - name: git-clone
-  image: 595659439703.dkr.ecr.eu-west-1.amazonaws.com/drone-git:1.3-3
+  image: public.ecr.aws/prima/drone-git:1.3-3
   environment:
     PLUGIN_DEPTH: 5
 
 - name: cache-restore
-  image: 595659439703.dkr.ecr.eu-west-1.amazonaws.com/drone-tools:1.20.0
+  image: public.ecr.aws/prima/drone-tools:1.20.0
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - cache-restore
@@ -33,7 +33,7 @@ steps:
   - git-clone
 
 - name: check-secrets
-  image: 595659439703.dkr.ecr.eu-west-1.amazonaws.com/drone-tools:1.20.0
+  image: public.ecr.aws/prima/drone-tools:1.20.0
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - check-secrets-grants
@@ -44,14 +44,14 @@ steps:
   - git-clone
 
 - name: check-public-docker-images
-  image: 595659439703.dkr.ecr.eu-west-1.amazonaws.com/drone-tools:1.20.0
+  image: public.ecr.aws/prima/drone-tools:1.20.0
   commands:
   - check-public-docker-images
   depends_on:
   - git-clone
 
 - name: build-image
-  image: 595659439703.dkr.ecr.eu-west-1.amazonaws.com/drone-tools:1.20.0
+  image: public.ecr.aws/prima/drone-tools:1.20.0
   commands:
   - sed -i 's/USER app/USER root/g' ./Dockerfile
   - docker build -t prima/amqpx-ci:${DRONE_COMMIT} ./
@@ -116,7 +116,7 @@ steps:
   - elixir-compile
 
 - name: cache-save
-  image: 595659439703.dkr.ecr.eu-west-1.amazonaws.com/drone-tools:1.20.0
+  image: public.ecr.aws/prima/drone-tools:1.20.0
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - cache-save _build deps
@@ -141,7 +141,7 @@ steps:
 
 services:
 - name: rabbit
-  image: 595659439703.dkr.ecr.eu-west-1.amazonaws.com/rabbitmq:3
+  image: public.ecr.aws/bitnami/rabbitmq:3.8
   environment:
     RABBITMQ_DEFAULT_PASS: guest
     RABBITMQ_DEFAULT_USER: guest
@@ -175,12 +175,12 @@ clone:
 
 steps:
 - name: git-clone
-  image: 595659439703.dkr.ecr.eu-west-1.amazonaws.com/drone-git:1.3-3
+  image: public.ecr.aws/prima/drone-git:1.3-3
   environment:
     PLUGIN_DEPTH: 5
 
 - name: cache-restore
-  image: 595659439703.dkr.ecr.eu-west-1.amazonaws.com/drone-tools:1.20.0
+  image: public.ecr.aws/prima/drone-tools:1.20.0
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - cache-restore
@@ -197,7 +197,7 @@ steps:
   - git-clone
 
 - name: build-image
-  image: 595659439703.dkr.ecr.eu-west-1.amazonaws.com/drone-tools:1.20.0
+  image: public.ecr.aws/prima/drone-tools:1.20.0
   commands:
   - sed -i 's/USER app/USER root/g' ./Dockerfile
   - docker build -t prima/amqpx-ci:${DRONE_COMMIT} ./
@@ -250,19 +250,19 @@ clone:
 
 steps:
 - name: git-clone
-  image: 595659439703.dkr.ecr.eu-west-1.amazonaws.com/drone-git:1.3-3
+  image: public.ecr.aws/prima/drone-git:1.3-3
   environment:
     PLUGIN_DEPTH: 5
 
 - name: pre-start
-  image: 595659439703.dkr.ecr.eu-west-1.amazonaws.com/drone-tools:1.20.0
+  image: public.ecr.aws/prima/drone-tools:1.20.0
   commands:
   - pre-start-scripts
   depends_on:
   - git-clone
 
 - name: deploy
-  image: 595659439703.dkr.ecr.eu-west-1.amazonaws.com/drone-tools:1.20.0
+  image: public.ecr.aws/prima/drone-tools:1.20.0
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - ./deploy/deploy-it production
@@ -277,7 +277,7 @@ steps:
   - pre-start
 
 - name: captainhook-notification
-  image: 595659439703.dkr.ecr.eu-west-1.amazonaws.com/drone-webhook
+  image: public.ecr.aws/prima/drone-webhook
   settings:
     signature-secret:
       from_secret: captainhook_secret
@@ -315,7 +315,7 @@ clone:
 
 steps:
 - name: email-failure
-  image: 595659439703.dkr.ecr.eu-west-1.amazonaws.com/drone-email
+  image: public.ecr.aws/prima/drone-email
   settings:
     from: noreply@prima.it
     host: email-smtp.eu-west-1.amazonaws.com
@@ -340,6 +340,6 @@ depends_on:
 
 ---
 kind: signature
-hmac: 4372cfbf4d0864a73e3d07825d96fae0b64c61af1bbd10dbcef024530e5f725b
+hmac: 551813c69e03ce292ab8cfe26eaea718b6d47b596f844b415e8d2c0743f0bdc2
 
 ...
