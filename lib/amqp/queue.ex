@@ -222,7 +222,7 @@ defmodule Amqpx.Queue do
           Basic.ack(channel, delivery_tag)
         rescue
           exception ->
-            stacktrace = System.stacktrace()
+            stacktrace = __STACKTRACE__
             Basic.reject(channel, delivery_tag, requeue: false)
             reraise exception, stacktrace
         end
