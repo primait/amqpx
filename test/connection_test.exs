@@ -64,8 +64,8 @@ defmodule ConnectionTest do
 
     params = amqp_params_network(record)
 
-    assert params[:username] == "guest"
-    assert params[:password] == "guest"
+    assert params[:username] == "amqpx"
+    assert params[:password] == "amqpx"
     assert params[:host] == 'rabbit'
   end
 end
