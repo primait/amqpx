@@ -13,7 +13,7 @@ services:
     image: rabbitmq:3-management
     environment:
       RABBITMQ_DEFAULT_VHOST: /
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: amqpx
+      RABBITMQ_DEFAULT_PASS: amqpx
     ports:
       - "23555:15672"
