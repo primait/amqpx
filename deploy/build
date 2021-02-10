@@ -24,11 +24,5 @@ export ENV=$1
 export AWS_DEFAULT_REGION="eu-west-1"
 export VERSION="${DRONE_TAG:-$DRONE_COMMIT_SHA}"
 
-# Check if artifact exists for current branch
-if aws s3 ls s3://prima-artifacts-encrypted/microservices/amqpx/"${VERSION}-${ENV}".tar.gz >/dev/null; then
-  echo "Artifact already exists!"
-  exit 0
-fi
-
 mix deps.get
 mix compile

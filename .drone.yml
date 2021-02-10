@@ -16,7 +16,7 @@ steps:
     PLUGIN_DEPTH: 5
 
 - name: cache-restore
-  image: public.ecr.aws/prima/drone-tools:1.20.0
+  image: public.ecr.aws/prima/drone-tools:1.20.1
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - cache-restore
@@ -33,7 +33,7 @@ steps:
   - git-clone
 
 - name: check-secrets
-  image: public.ecr.aws/prima/drone-tools:1.20.0
+  image: public.ecr.aws/prima/drone-tools:1.20.1
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - check-secrets-grants
@@ -44,14 +44,14 @@ steps:
   - git-clone
 
 - name: check-public-docker-images
-  image: public.ecr.aws/prima/drone-tools:1.20.0
+  image: public.ecr.aws/prima/drone-tools:1.20.1
   commands:
   - check-public-docker-images
   depends_on:
   - git-clone
 
 - name: build-image
-  image: public.ecr.aws/prima/drone-tools:1.20.0
+  image: public.ecr.aws/prima/drone-tools:1.20.1
   commands:
   - sed -i 's/USER app/USER root/g' ./Dockerfile
   - docker build -t prima/amqpx-ci:${DRONE_COMMIT} ./
@@ -116,7 +116,7 @@ steps:
   - elixir-compile
 
 - name: cache-save
-  image: public.ecr.aws/prima/drone-tools:1.20.0
+  image: public.ecr.aws/prima/drone-tools:1.20.1
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - cache-save _build deps
@@ -180,7 +180,7 @@ steps:
     PLUGIN_DEPTH: 5
 
 - name: cache-restore
-  image: public.ecr.aws/prima/drone-tools:1.20.0
+  image: public.ecr.aws/prima/drone-tools:1.20.1
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - cache-restore
@@ -197,7 +197,7 @@ steps:
   - git-clone
 
 - name: build-image
-  image: public.ecr.aws/prima/drone-tools:1.20.0
+  image: public.ecr.aws/prima/drone-tools:1.20.1
   commands:
   - sed -i 's/USER app/USER root/g' ./Dockerfile
   - docker build -t prima/amqpx-ci:${DRONE_COMMIT} ./
@@ -255,14 +255,14 @@ steps:
     PLUGIN_DEPTH: 5
 
 - name: pre-start
-  image: public.ecr.aws/prima/drone-tools:1.20.0
+  image: public.ecr.aws/prima/drone-tools:1.20.1
   commands:
   - pre-start-scripts
   depends_on:
   - git-clone
 
 - name: deploy
-  image: public.ecr.aws/prima/drone-tools:1.20.0
+  image: public.ecr.aws/prima/drone-tools:1.20.1
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - ./deploy/deploy-it production
@@ -340,6 +340,6 @@ depends_on:
 
 ---
 kind: signature
-hmac: 2988aa96edb0b1a14d21319b211db162877f1661f75e8e98f886f45f364776ea
+hmac: b33c8817c84d2b8604c737376f69356880e081d424be91783ee9329fc8200f59
 
 ...

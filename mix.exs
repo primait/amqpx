@@ -17,7 +17,8 @@ defmodule Amqpx.MixProject do
         plt_add_apps: [:mix],
         plt_add_deps: :transitive,
         ignore_warnings: ".dialyzerignore"
-      ]
+      ],
+      xref: [exclude: Jason]
     ]
   end
 
