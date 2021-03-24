@@ -24,5 +24,6 @@ export ENV=$1
 export AWS_DEFAULT_REGION="eu-west-1"
 export VERSION="${DRONE_TAG:-$DRONE_COMMIT_SHA}"
 
-mix deps.get
-mix compile
+mix hex.config api_key "$HEX_AUTH_KEY"
+mix hex.user whoami
+mix hex.publish --yes
