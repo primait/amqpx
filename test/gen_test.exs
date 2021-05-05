@@ -9,7 +9,8 @@ defmodule Amqpx.Test.AmqpxTest do
       connection_params: Application.get_env(:amqpx, :amqp_connection)
     })
 
-    Amqpx.Gen.Producer.start_link(Application.get_env(:amqpx, :producer))
+    {:ok, _} = Amqpx.Gen.Producer.start_link(Application.get_env(:amqpx, :producer))
+    {:ok, _} = Amqpx.Gen.Producer.start_link(Application.get_env(:amqpx, :producer2))
 
     Enum.each(Application.get_env(:amqpx, :consumers), &Amqpx.Gen.Consumer.start_link(&1))
 
@@ -50,5 +51,33 @@ defmodule Amqpx.Test.AmqpxTest do
     payload = %{test: 1}
 
     assert Producer3.send_payload(payload) === :ok
+  end
+
+  test "e2e: publish messages using more than one registered producer" do
+    test_pid = self()
+
+    with_mock(Consumer1,
+      handle_message: fn p, _, s ->
+        send(test_pid, {:consumer1_msg, p})
+        {:ok, s}
+      end
+    ) do
+      with_mock(Consumer2,
+        handle_message: fn p, _, s ->
+          send(test_pid, {:consumer2_msg, p})
+          {:ok, s}
+        end
+      ) do
+        publish_1_result = Amqpx.Gen.Producer.publish("topic1", "amqpx.test1", "some-message")
+        publish_2_result = Amqpx.Gen.Producer.publish_by(:producer2, "topic2", "amqpx.test2", "some-message-2")
+
+        assert publish_1_result == :ok
+        assert publish_2_result == :ok
+        assert_receive {:consumer1_msg, "some-message"}
+        assert_receive {:consumer2_msg, "some-message-2"}
+        refute_receive {:consumer1_msg, "some-message-2"}
+        refute_receive {:consumer2_msg, "some-message"}
+      end
+    end
   end
 end
