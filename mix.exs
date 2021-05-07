@@ -54,7 +54,7 @@ defmodule Amqpx.MixProject do
       {:elixir_uuid, "~> 1.1"},
       {:credo, "~> 1.1", only: [:dev, :test]},
       {:mock, "~> 0.3.0", only: :test},
-      {:dialyxir, "~> 1.0.0-rc", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.1.0", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
