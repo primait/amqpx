@@ -19,7 +19,8 @@ defmodule Amqpx.Gen.Producer do
   # Public API
 
   def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    name = Map.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   def init(opts) do
@@ -28,9 +29,27 @@ defmodule Amqpx.Gen.Producer do
     {:ok, state}
   end
 
-  @spec publish(String.t(), String.t(), String.t(), Keyword.t()) :: :ok | :error
-  def publish(name, routing_key, payload, options \\ []) do
-    case GenServer.call(__MODULE__, {:publish, {name, routing_key, payload, options}}) do
+  @spec publish(
+          exchange_name :: String.t(),
+          routing_key :: String.t(),
+          payload :: String.t(),
+          options :: Keyword.t()
+        ) ::
+          :ok | :error
+  def publish(exchange_name, routing_key, payload, options \\ []) do
+    publish_by(__MODULE__, exchange_name, routing_key, payload, options)
+  end
+
+  @spec publish_by(
+          producer_name :: GenServer.name(),
+          exchange_name :: String.t(),
+          routing_key :: String.t(),
+          payload :: String.t(),
+          options :: Keyword.t()
+        ) ::
+          :ok | :error
+  def publish_by(producer_name, exchange_name, routing_key, payload, options \\ []) do
+    case GenServer.call(producer_name, {:publish, {exchange_name, routing_key, payload, options}}) do
       :ok ->
         :ok
 

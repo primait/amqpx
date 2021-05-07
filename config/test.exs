@@ -76,3 +76,16 @@ config :amqpx, :producer, %{
     }
   ]
 }
+
+config :amqpx, :producer2, %{
+  name: :producer2,
+  publish_timeout: 5_000,
+  publisher_confirms: true,
+  exchanges: [
+    %{
+      name: "test_exchange_2",
+      type: :topic,
+      opts: [durable: true]
+    }
+  ]
+}
