@@ -37,11 +37,12 @@ defmodule Amqpx.MixProject do
     [
       check: [
         "format --check-formatted mix.exs \"lib/**/*.{ex,exs}\" \"test/**/*.{ex,exs}\" \"priv/**/*.{ex,exs}\" \"config/**/*.{ex,exs}\"",
+        "deps.unlock --check-unused",
         "credo",
         "dialyzer"
       ],
       "format.all": [
-        "format mix.exs \"lib/**/*.{ex,exs}\" \"test/**/*.{ex,exs}\" \"priv/**/*.{ex,exs}\" \"config/**/*.{ex,exs}\""
+        "format mix.exs \"lib/**/*.{ex,exs}\" \"test/**/*.{ex,exs}\" \"config/**/*.{ex,exs}\""
       ]
     ]
   end
@@ -49,12 +50,12 @@ defmodule Amqpx.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:amqp_client, "~> 3.7.20"},
-      {:rabbit_common, "~> 3.7.20"},
-      {:elixir_uuid, "~> 1.1"},
-      {:credo, "~> 1.1", only: [:dev, :test]},
-      {:mock, "~> 0.3.0", only: :test},
-      {:dialyxir, "~> 1.0.0-rc", only: [:dev, :test], runtime: false},
+      {:amqp_client, "~> 3.8"},
+      {:rabbit_common, "~> 3.8"},
+      {:elixir_uuid, "~> 1.2"},
+      {:credo, "~> 1.5", only: [:dev, :test]},
+      {:mock, "~> 0.3.7", only: :test},
+      {:dialyxir, "~> 1.1", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
