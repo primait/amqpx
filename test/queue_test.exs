@@ -4,7 +4,7 @@ defmodule QueueTest do
   alias Amqpx.{Channel, Connection, Exchange, Queue}
 
   setup do
-    {:ok, conn} = Connection.open(Application.get_env(:amqpx, :amqp_connection))
+    {:ok, conn} = Connection.open(Application.fetch_env!(:amqpx, :amqp_connection))
     {:ok, chan} = Channel.open(conn)
     on_exit(fn -> :ok = Connection.close(conn) end)
     {:ok, conn: conn, chan: chan}

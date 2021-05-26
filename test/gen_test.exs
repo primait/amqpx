@@ -1,18 +1,23 @@
 defmodule Amqpx.Test.AmqpxTest do
   use ExUnit.Case
 
-  alias Amqpx.Test.Support.{Consumer1, Consumer2, Producer1, Producer2, Producer3}
+  alias Amqpx.Test.Support.Consumer1
+  alias Amqpx.Test.Support.Consumer2
+  alias Amqpx.Test.Support.Producer1
+  alias Amqpx.Test.Support.Producer2
+  alias Amqpx.Test.Support.Producer3
+
   import Mock
 
   setup_all do
     Amqpx.Gen.ConnectionManager.start_link(%{
-      connection_params: Application.get_env(:amqpx, :amqp_connection)
+      connection_params: Application.fetch_env!(:amqpx, :amqp_connection)
     })
 
-    {:ok, _} = Amqpx.Gen.Producer.start_link(Application.get_env(:amqpx, :producer))
-    {:ok, _} = Amqpx.Gen.Producer.start_link(Application.get_env(:amqpx, :producer2))
+    {:ok, _} = Amqpx.Gen.Producer.start_link(Application.fetch_env!(:amqpx, :producer))
+    {:ok, _} = Amqpx.Gen.Producer.start_link(Application.fetch_env!(:amqpx, :producer2))
 
-    Enum.each(Application.get_env(:amqpx, :consumers), &Amqpx.Gen.Consumer.start_link(&1))
+    Enum.each(Application.fetch_env!(:amqpx, :consumers), &Amqpx.Gen.Consumer.start_link(&1))
 
     :timer.sleep(1_000)
     :ok

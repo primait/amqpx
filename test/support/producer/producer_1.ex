@@ -1,8 +1,6 @@
 defmodule Amqpx.Test.Support.Producer1 do
   @moduledoc nil
 
-  require Logger
-
   alias Amqpx.Gen.Producer
 
   @spec send_payload(map) :: :ok | :error

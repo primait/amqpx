@@ -2,14 +2,12 @@ defmodule Amqpx.Test.Support.Consumer1 do
   @moduledoc nil
   @behaviour Amqpx.Gen.Consumer
 
-  alias Amqpx.{Basic, Helper}
-
-  @config Application.get_env(:amqpx, __MODULE__)
-  @queue Application.get_env(:amqpx, __MODULE__)[:queue]
+  alias Amqpx.Basic
+  alias Amqpx.Helper
 
   def setup(channel) do
-    Helper.declare(channel, @config)
-    Basic.consume(channel, @queue, self())
+    Helper.declare(channel, Application.fetch_env!(:amqpx, __MODULE__))
+    Basic.consume(channel, Application.fetch_env!(:amqpx, __MODULE__)[:queue], self())
     {:ok, %{}}
   end
 
