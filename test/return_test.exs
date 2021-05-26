@@ -4,7 +4,7 @@ defmodule ReturnTest do
   alias Amqpx.{Basic, Confirm, Connection, Channel}
 
   setup do
-    {:ok, conn} = Connection.open(Application.get_env(:amqpx, :amqp_connection))
+    {:ok, conn} = Connection.open(Application.fetch_env!(:amqpx, :amqp_connection))
     {:ok, chan} = Channel.open(conn)
     :ok = Confirm.select(chan)
 

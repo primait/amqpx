@@ -4,7 +4,7 @@ defmodule ChannelTest do
   alias Amqpx.{Channel, Connection}
 
   setup do
-    {:ok, conn} = Connection.open(Application.get_env(:amqpx, :amqp_connection))
+    {:ok, conn} = Connection.open(Application.fetch_env!(:amqpx, :amqp_connection))
     on_exit(fn -> :ok = Connection.close(conn) end)
     {:ok, conn: conn}
   end
