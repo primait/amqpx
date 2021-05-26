@@ -1,7 +1,12 @@
 defmodule Amqpx.Test.AmqpxTest do
   use ExUnit.Case
 
-  alias Amqpx.Test.Support.{Consumer1, Consumer2, Producer1, Producer2, Producer3}
+  alias Amqpx.Test.Support.Consumer1
+  alias Amqpx.Test.Support.Consumer2
+  alias Amqpx.Test.Support.Producer1
+  alias Amqpx.Test.Support.Producer2
+  alias Amqpx.Test.Support.Producer3
+
   import Mock
 
   setup_all do
