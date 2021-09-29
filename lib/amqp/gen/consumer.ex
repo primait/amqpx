@@ -20,18 +20,7 @@ defmodule Amqpx.Gen.Consumer do
   @callback setup(Channel.t()) :: {:ok, map()} | {:error, any()}
   @callback handle_message(any(), map(), map()) :: {:ok, map()} | {:error, any()}
   @callback handle_message_rejection(any()) :: {:ok} | {:error, any()}
-
-  defmacro __using__(_params) do
-    quote do
-      @behaviour Amqpx.Gen.Consumer
-      def handle_message_rejection(_error) do
-        {:ok}
-      end
-
-      defoverridable handle_message_rejection: 1
-    end
-  end
-
+  @optional_callbacks handle_message_rejection: 1
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts)
   end
@@ -208,10 +197,17 @@ defmodule Amqpx.Gen.Consumer do
   rescue
     e in _ ->
       Logger.error(inspect(e))
-      handler_module.handle_message_rejection(e)
 
       Task.start(fn ->
         :timer.sleep(backoff)
+        IO.puts("REACHED HANDLE_MESSAGE_REJECTION 1/2")
+
+        case function_exported?(handler_module, :handle_message_rejection, 1) && redelivered do
+          true ->
+            IO.puts("REACHED HANDLE_MESSAGE_REJECTION 2/2")
+            handler_module.handle_message_rejection(e)
+        end
+
         Basic.reject(state.channel, tag, requeue: !redelivered)
       end)
 
