@@ -20,10 +20,13 @@ defmodule Amqpx.Gen.Consumer do
   @callback setup(Channel.t()) :: {:ok, map()} | {:error, any()}
   @callback handle_message(any(), map(), map()) :: {:ok, map()} | {:error, any()}
   @callback handle_message_rejection(any()) :: {:ok} | {:error, any()}
+
   defmacro __using__(_params) do
     quote do
       @behaviour Amqpx.Gen.Consumer
-      def handle_message_rejection(_, do: {:ok})
+      def handle_message_rejection(_error) do
+        {:ok}
+      end
 
       defoverridable handle_message_rejection: 1
     end

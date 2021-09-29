@@ -3,6 +3,7 @@ defmodule Amqpx.Test.AmqpxTest do
 
   alias Amqpx.Test.Support.Consumer1
   alias Amqpx.Test.Support.Consumer2
+  alias Amqpx.Test.Support.HandleRejectionConsumer
   alias Amqpx.Test.Support.Producer1
   alias Amqpx.Test.Support.Producer2
   alias Amqpx.Test.Support.Producer3
@@ -83,6 +84,20 @@ defmodule Amqpx.Test.AmqpxTest do
         refute_receive {:consumer1_msg, "some-message-2"}
         refute_receive {:consumer2_msg, "some-message"}
       end
+    end
+  end
+
+  test "e2e: should handle message rejected when handle message fails" do
+    payload = %{test: 1}
+
+    with_mock(HandleRejectionConsumer,
+      handle_message: fn _, _, _ -> raise "Test Error" end,
+      handle_message_rejection: fn "Test Error" -> {:ok} end
+    ) do
+      Producer1.send_payload(payload)
+      :timer.sleep(50)
+      assert_called(HandleRejectionConsumer.handle_message(:_, :_, :_))
+      assert_called(HandleRejectionConsumer.handle_message_rejection("Test Error"))
     end
   end
 end
