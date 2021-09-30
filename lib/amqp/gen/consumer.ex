@@ -203,12 +203,8 @@ defmodule Amqpx.Gen.Consumer do
       Task.start(fn ->
         :timer.sleep(backoff)
 
-        case is_message_to_reject do
-          true ->
-            handler_module.handle_message_rejection(e)
-
-          false ->
-            nil
+        if is_message_to_reject do
+          handler_module.handle_message_rejection(e)
         end
 
         Basic.reject(state.channel, tag, requeue: !redelivered)
