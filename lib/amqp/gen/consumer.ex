@@ -21,7 +21,7 @@ defmodule Amqpx.Gen.Consumer do
   @callback handle_message(any(), map(), map()) :: {:ok, map()} | {:error, any()}
   @callback handle_message_rejection(any()) :: {:ok} | {:error, any()}
   @optional_callbacks handle_message_rejection: 1
-  
+
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts)
   end
