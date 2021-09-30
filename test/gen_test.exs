@@ -75,6 +75,7 @@ defmodule Amqpx.Test.AmqpxTest do
         end
       ) do
         publish_1_result = Amqpx.Gen.Producer.publish("topic1", "amqpx.test1", "some-message")
+
         publish_2_result = Amqpx.Gen.Producer.publish_by(:producer2, "topic2", "amqpx.test2", "some-message-2")
 
         assert publish_1_result == :ok
@@ -92,13 +93,13 @@ defmodule Amqpx.Test.AmqpxTest do
 
     with_mock(HandleRejectionConsumer,
       handle_message: fn _, _, _ -> raise "error" end,
-      handle_message_rejection: fn _ -> send(test_pid, {:ok}) end
+      handle_message_rejection: fn _ -> send(test_pid, {:ok, :from_handle_message_rejection}) end
     ) do
       publish_result =
-        Amqpx.Gen.Producer.publish("topic-rejection", "amqpx.test-rejection", "some-message", requeue: true)
+        Amqpx.Gen.Producer.publish("topic-rejection", "amqpx.test-rejection", "some-message", redeliver: false)
 
       assert publish_result == :ok
-      assert_receive {:ok}
+      assert_receive {:ok, :from_handle_message_rejection}, 1_000
     end
   end
 end

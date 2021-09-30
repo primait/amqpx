@@ -30,7 +30,8 @@ config :amqpx,
       backoff: 10_000
     },
     %{
-      handler_module: Amqpx.Test.Support.HandleRejectionConsumer
+      handler_module: Amqpx.Test.Support.HandleRejectionConsumer,
+      backoff: 10
     }
   ]
 
@@ -50,7 +51,9 @@ config :amqpx, Amqpx.Test.Support.Consumer1, %{
 
 config :amqpx, Amqpx.Test.Support.Consumer2, %{
   queue: "test2",
-  exchanges: [],
+  exchanges: [
+    %{name: "topic2", type: :topic, routing_keys: ["amqpx.test2"]}
+  ],
   opts: [
     durable: true,
     arguments: [
@@ -69,7 +72,12 @@ config :amqpx, Amqpx.Test.Support.Consumer3, %{
 config :amqpx, Amqpx.Test.Support.HandleRejectionConsumer, %{
   queue: "test-rejection",
   exchanges: [
-    %{name: "topic-rejection", type: :topic, routing_keys: ["amqpx.test-rejection"], opts: [durable: true]}
+    %{
+      name: "topic-rejection",
+      type: :topic,
+      routing_keys: ["amqpx.test-rejection"],
+      opts: [redelivered: true]
+    }
   ]
 }
 

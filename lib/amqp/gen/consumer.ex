@@ -198,14 +198,17 @@ defmodule Amqpx.Gen.Consumer do
     e in _ ->
       Logger.error(inspect(e))
 
+      is_message_to_reject = function_exported?(handler_module, :handle_message_rejection, 1) && !redelivered
+
       Task.start(fn ->
         :timer.sleep(backoff)
-        IO.puts("REACHED HANDLE_MESSAGE_REJECTION 1/2")
 
-        case function_exported?(handler_module, :handle_message_rejection, 1) && redelivered do
+        case is_message_to_reject do
           true ->
-            IO.puts("REACHED HANDLE_MESSAGE_REJECTION 2/2")
             handler_module.handle_message_rejection(e)
+
+          false ->
+            nil
         end
 
         Basic.reject(state.channel, tag, requeue: !redelivered)
