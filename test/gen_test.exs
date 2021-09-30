@@ -89,16 +89,16 @@ defmodule Amqpx.Test.AmqpxTest do
 
   test "e2e: should handle message rejected when handle message fails" do
     test_pid = self()
-
+    error_message = "test_error"
     with_mock(HandleRejectionConsumer,
-      handle_message: fn _, _, _ -> raise "error" end,
-      handle_message_rejection: fn _ -> send(test_pid, {:ok, :from_handle_message_rejection}) end
+      handle_message: fn _, _, _ -> raise error_message end,
+      handle_message_rejection: fn error -> send(test_pid, {:ok, error.message}) end
     ) do
       publish_result =
         Amqpx.Gen.Producer.publish("topic-rejection", "amqpx.test-rejection", "some-message", redeliver: false)
 
       assert publish_result == :ok
-      assert_receive {:ok, :from_handle_message_rejection}, 1_000
+      assert_receive {:ok, ^error_message}, 1_000
     end
   end
 end
