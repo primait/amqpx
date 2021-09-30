@@ -75,7 +75,6 @@ defmodule Amqpx.Test.AmqpxTest do
         end
       ) do
         publish_1_result = Amqpx.Gen.Producer.publish("topic1", "amqpx.test1", "some-message")
-
         publish_2_result = Amqpx.Gen.Producer.publish_by(:producer2, "topic2", "amqpx.test2", "some-message-2")
 
         assert publish_1_result == :ok
