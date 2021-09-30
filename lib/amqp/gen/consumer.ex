@@ -198,7 +198,9 @@ defmodule Amqpx.Gen.Consumer do
     e in _ ->
       Logger.error(inspect(e))
 
-      is_message_to_reject = function_exported?(handler_module, :handle_message_rejection, 1) && redelivered
+      is_message_to_reject =
+        function_exported?(handler_module, :handle_message_rejection, 1) &&
+          redelivered
 
       Task.start(fn ->
         :timer.sleep(backoff)

@@ -90,6 +90,7 @@ defmodule Amqpx.Test.AmqpxTest do
   test "e2e: should handle message rejected when handle message fails" do
     test_pid = self()
     error_message = "test_error"
+
     with_mock(HandleRejectionConsumer,
       handle_message: fn _, _, _ -> raise error_message end,
       handle_message_rejection: fn error -> send(test_pid, {:ok, error.message}) end
