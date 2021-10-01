@@ -177,3 +177,41 @@ defmodule Myapp.Producer do
   end
 end
 ```
+
+## Handle message rejections
+
+You can define an implement an optional callback inside your `Consumer` module that will be called whenever an error is raised in the `handle_message` callback and the `redelivered` flag is set to `true`. This callback can be useful whenever you want to define a standard rejection logic (e.g. datadog alarms and such). 
+### Consumer
+
+```elixir
+defmodule Myapp.HandleRejectionConsumer do
+  @moduledoc nil
+  @behaviour Amqpx.Gen.Consumer
+
+  alias Amqpx.Basic
+  alias Amqpx.Helper
+
+  @config Application.get_env(:myapp, __MODULE__)
+  @queue Application.get_env(:myapp, __MODULE__)[:queue]
+
+  def setup(channel) do
+    # here you can declare your queues and exchanges
+    Helper.declare(channel, @config)
+    Basic.consume(channel, @queue, self()) # Don't forget to start consuming here!
+
+    {:ok, %{}}
+  end
+
+  def handle_message(payload, meta, state) do
+    IO.inspect("payload: #{inspect(payload)}, metadata: #{inspect(meta)}")
+    # something that could fail
+    {:ok, state}
+  end
+
+  def handle_message_rejection(error) do 
+    # will be invoked whenever handle_message fails
+    # do something like error logging
+    {:ok}
+  end
+end
+```

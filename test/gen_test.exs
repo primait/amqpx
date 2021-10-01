@@ -3,6 +3,7 @@ defmodule Amqpx.Test.AmqpxTest do
 
   alias Amqpx.Test.Support.Consumer1
   alias Amqpx.Test.Support.Consumer2
+  alias Amqpx.Test.Support.HandleRejectionConsumer
   alias Amqpx.Test.Support.Producer1
   alias Amqpx.Test.Support.Producer2
   alias Amqpx.Test.Support.Producer3
@@ -83,6 +84,22 @@ defmodule Amqpx.Test.AmqpxTest do
         refute_receive {:consumer1_msg, "some-message-2"}
         refute_receive {:consumer2_msg, "some-message"}
       end
+    end
+  end
+
+  test "e2e: should handle message rejected when handle message fails" do
+    test_pid = self()
+    error_message = "test_error"
+
+    with_mock(HandleRejectionConsumer,
+      handle_message: fn _, _, _ -> raise error_message end,
+      handle_message_rejection: fn error -> send(test_pid, {:ok, error.message}) end
+    ) do
+      publish_result =
+        Amqpx.Gen.Producer.publish("topic-rejection", "amqpx.test-rejection", "some-message", redeliver: false)
+
+      assert publish_result == :ok
+      assert_receive {:ok, ^error_message}, 1_000
     end
   end
 end
