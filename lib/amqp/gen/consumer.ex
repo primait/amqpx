@@ -19,8 +19,8 @@ defmodule Amqpx.Gen.Consumer do
 
   @callback setup(Channel.t()) :: {:ok, map()} | {:error, any()}
   @callback handle_message(any(), map(), map()) :: {:ok, map()} | {:error, any()}
-  @callback handle_message_rejection(any()) :: {:ok} | {:error, any()}
-  @optional_callbacks handle_message_rejection: 1
+  @callback handle_message_rejection(message :: any(), error :: any()) :: :ok | {:error, any()}
+  @optional_callbacks handle_message_rejection: 2
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts)
@@ -203,11 +203,11 @@ defmodule Amqpx.Gen.Consumer do
         :timer.sleep(backoff)
 
         is_message_to_reject =
-          function_exported?(handler_module, :handle_message_rejection, 1) &&
+          function_exported?(handler_module, :handle_message_rejection, 2) &&
             redelivered
 
         if is_message_to_reject do
-          handler_module.handle_message_rejection(e)
+          handler_module.handle_message_rejection(message, e)
         end
 
         Basic.reject(state.channel, tag, requeue: !redelivered)

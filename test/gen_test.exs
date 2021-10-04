@@ -93,7 +93,7 @@ defmodule Amqpx.Test.AmqpxTest do
 
     with_mock(HandleRejectionConsumer,
       handle_message: fn _, _, _ -> raise error_message end,
-      handle_message_rejection: fn error -> send(test_pid, {:ok, error.message}) end
+      handle_message_rejection: fn _, error -> send(test_pid, {:ok, error.message}) end
     ) do
       publish_result =
         Amqpx.Gen.Producer.publish("topic-rejection", "amqpx.test-rejection", "some-message", redeliver: false)

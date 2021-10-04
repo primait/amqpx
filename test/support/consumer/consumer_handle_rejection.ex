@@ -11,8 +11,8 @@ defmodule Amqpx.Test.Support.HandleRejectionConsumer do
     {:ok, %{}}
   end
 
-  def handle_message_rejection(_) do
-    {:ok}
+  def handle_message_rejection(_msg, _err) do
+    :ok
   end
 
   def handle_message(_payload, _meta, _state) do
