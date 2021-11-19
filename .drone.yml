@@ -16,7 +16,7 @@ steps:
     PLUGIN_DEPTH: 5
 
 - name: cache-restore
-  image: public.ecr.aws/prima/drone-tools:1.20.1
+  image: public.ecr.aws/prima/drone-tools:1.21.2
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - cache-restore
@@ -27,13 +27,11 @@ steps:
     path: /etc/profile.d/ecs-credentials-endpoint
   - name: docker
     path: /var/run/docker.sock
-  - name: docker-conf
-    path: /root/.docker
   depends_on:
   - git-clone
 
 - name: check-secrets
-  image: public.ecr.aws/prima/drone-tools:1.20.1
+  image: public.ecr.aws/prima/drone-tools:1.21.2
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - check-secrets-grants
@@ -44,22 +42,20 @@ steps:
   - git-clone
 
 - name: check-public-docker-images
-  image: public.ecr.aws/prima/drone-tools:1.20.1
+  image: public.ecr.aws/prima/drone-tools:1.21.2
   commands:
   - check-public-docker-images
   depends_on:
   - git-clone
 
 - name: build-image
-  image: public.ecr.aws/prima/drone-tools:1.20.1
+  image: public.ecr.aws/prima/drone-tools:1.21.2
   commands:
   - sed -i 's/USER app/USER root/g' ./Dockerfile
   - docker build -t prima/amqpx-ci:${DRONE_COMMIT} ./
   volumes:
   - name: docker
     path: /var/run/docker.sock
-  - name: docker-conf
-    path: /root/.docker
   depends_on:
   - cache-restore
 
@@ -125,7 +121,7 @@ steps:
   - elixir-compile
 
 - name: cache-save
-  image: public.ecr.aws/prima/drone-tools:1.20.1
+  image: public.ecr.aws/prima/drone-tools:1.21.2
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - cache-save _build deps
@@ -136,8 +132,6 @@ steps:
     path: /etc/profile.d/ecs-credentials-endpoint
   - name: docker
     path: /var/run/docker.sock
-  - name: docker-conf
-    path: /root/.docker
   when:
     branch:
     - master
@@ -164,9 +158,6 @@ volumes:
 - name: ecs
   host:
     path: /etc/profile.d/ecs-credentials-endpoint
-- name: docker-conf
-  host:
-    path: /home/ec2-user/.docker
 
 trigger:
   event:
@@ -190,7 +181,7 @@ steps:
     PLUGIN_DEPTH: 5
 
 - name: cache-restore
-  image: public.ecr.aws/prima/drone-tools:1.20.1
+  image: public.ecr.aws/prima/drone-tools:1.21.2
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - cache-restore
@@ -201,21 +192,17 @@ steps:
     path: /etc/profile.d/ecs-credentials-endpoint
   - name: docker
     path: /var/run/docker.sock
-  - name: docker-conf
-    path: /root/.docker
   depends_on:
   - git-clone
 
 - name: build-image
-  image: public.ecr.aws/prima/drone-tools:1.20.1
+  image: public.ecr.aws/prima/drone-tools:1.21.2
   commands:
   - sed -i 's/USER app/USER root/g' ./Dockerfile
   - docker build -t prima/amqpx-ci:${DRONE_COMMIT} ./
   volumes:
   - name: docker
     path: /var/run/docker.sock
-  - name: docker-conf
-    path: /root/.docker
   depends_on:
   - cache-restore
 
@@ -241,9 +228,6 @@ volumes:
 - name: ecs
   host:
     path: /etc/profile.d/ecs-credentials-endpoint
-- name: docker-conf
-  host:
-    path: /home/ec2-user/.docker
 
 trigger:
   event:
@@ -266,7 +250,7 @@ steps:
 - name: email-failure
   image: public.ecr.aws/prima/drone-email
   settings:
-    from: noreply@prima.it
+    from: drone@prima.it
     host: email-smtp.eu-west-1.amazonaws.com
   environment:
     PLUGIN_PASSWORD:
@@ -289,6 +273,6 @@ depends_on:
 
 ---
 kind: signature
-hmac: 808ca05d6eb4b31389a19eeb0e97f57d54b736a0183f2810725a08a6eabe4ca1
+hmac: 2ece4ca777aa4a03f2e51978bf2f04076998b5f887f9fd34ced41e4acd02fdfa
 
 ...
