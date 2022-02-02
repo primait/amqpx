@@ -12,7 +12,8 @@ defmodule Amqpx.Gen.Consumer do
     :handler_module,
     :handler_state,
     prefetch_count: 50,
-    backoff: 5_000
+    backoff: 5_000,
+    connection_name: Amqpx.Gen.ConnectionManager
   ]
 
   @type state() :: %__MODULE__{}
@@ -37,10 +38,11 @@ defmodule Amqpx.Gen.Consumer do
         %{
           backoff: backoff,
           prefetch_count: prefetch_count,
-          handler_module: handler_module
+          handler_module: handler_module,
+          connection_name: connection_name
         } = state
       ) do
-    case GenServer.call(Amqpx.Gen.ConnectionManager, :get_connection) do
+    case GenServer.call(connection_name, :get_connection) do
       nil ->
         :timer.sleep(backoff)
         {:stop, :not_ready, state}

@@ -13,7 +13,8 @@ defmodule Amqpx.Gen.Producer do
     :publisher_confirms,
     publish_timeout: 1_000,
     backoff: 5_000,
-    exchanges: []
+    exchanges: [],
+    connection_name: Amqpx.Gen.ConnectionManager
   ]
 
   # Public API
@@ -63,9 +64,14 @@ defmodule Amqpx.Gen.Producer do
 
   def handle_info(
         :setup,
-        %{backoff: backoff, publisher_confirms: publisher_confirms, exchanges: exchanges} = state
+        %{
+          backoff: backoff,
+          publisher_confirms: publisher_confirms,
+          exchanges: exchanges,
+          connection_name: connection_name
+        } = state
       ) do
-    case GenServer.call(Amqpx.Gen.ConnectionManager, :get_connection) do
+    case GenServer.call(connection_name, :get_connection) do
       nil ->
         :timer.sleep(backoff)
         {:stop, :not_ready, state}
