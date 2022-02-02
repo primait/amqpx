@@ -96,6 +96,7 @@ steps:
 - name: elixir-test
   image: prima/amqpx-ci:${DRONE_COMMIT}
   commands:
+  - sleep 15
   - mix test
   environment:
     MIX_ENV: test
@@ -150,6 +151,13 @@ services:
     RABBITMQ_PASSWORD: amqpx
     RABBITMQ_USERNAME: amqpx
     RABBITMQ_VHOST: /
+
+- name: rabbit_two
+  image: public.ecr.aws/bitnami/rabbitmq:3.8
+  environment:
+    RABBITMQ_PASSWORD: amqpx
+    RABBITMQ_USERNAME: amqpx
+    RABBITMQ_VHOST: /two
 
 volumes:
 - name: docker
