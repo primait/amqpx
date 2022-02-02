@@ -4,9 +4,11 @@ defmodule Amqpx.Test.AmqpxTest do
   alias Amqpx.Test.Support.Consumer1
   alias Amqpx.Test.Support.Consumer2
   alias Amqpx.Test.Support.HandleRejectionConsumer
+  alias Amqpx.Test.Support.ConsumerConnectionTwo
   alias Amqpx.Test.Support.Producer1
   alias Amqpx.Test.Support.Producer2
   alias Amqpx.Test.Support.Producer3
+  alias Amqpx.Test.Support.ProducerConnectionTwo
 
   import Mock
 
@@ -15,8 +17,13 @@ defmodule Amqpx.Test.AmqpxTest do
       connection_params: Application.fetch_env!(:amqpx, :amqp_connection)
     })
 
+    Amqpx.Gen.ConnectionManager.start_link(%{
+      connection_params: Application.fetch_env!(:amqpx, :amqp_connection_two)
+    })
+
     {:ok, _} = Amqpx.Gen.Producer.start_link(Application.fetch_env!(:amqpx, :producer))
     {:ok, _} = Amqpx.Gen.Producer.start_link(Application.fetch_env!(:amqpx, :producer2))
+    {:ok, _} = Amqpx.Gen.Producer.start_link(Application.fetch_env!(:amqpx, :producer_connection_two))
 
     Enum.each(Application.fetch_env!(:amqpx, :consumers), &Amqpx.Gen.Consumer.start_link(&1))
 
@@ -100,6 +107,22 @@ defmodule Amqpx.Test.AmqpxTest do
 
       assert publish_result == :ok
       assert_receive {:ok, ^error_message}, 1_000
+    end
+  end
+
+  test "e2e: should publish and consume from the right connections" do
+    payload = %{test: 1}
+
+    with_mocks [
+      {Consumer1, [], handle_message: fn _, _, s -> {:ok, s} end},
+      {ConsumerConnectionTwo, [], handle_message: fn _, _, s -> {:ok, s} end}
+    ] do
+      Producer1.send_payload(payload)
+      ProducerConnectionTwo.send_payload(payload)
+
+      :timer.sleep(50)
+      assert_called(Consumer1.handle_message(Jason.encode!(payload), :_, :_))
+      assert_called(ConsumerConnectionTwo.handle_message(Jason.encode!(payload), :_, :_))
     end
   end
 end
