@@ -15,7 +15,7 @@ defmodule Amqpx.Gen.ConnectionManager do
   @type state() :: %__MODULE__{}
 
   def start_link(%{connection_params: connection_params} = opts) do
-    GenServer.start_link(__MODULE__, opts, name: Keyword.get(connection_params, :name) || Amqpx.Gen.ConnectionManager)
+    GenServer.start_link(__MODULE__, opts, name: Keyword.get(connection_params, :name, Amqpx.Gen.ConnectionManager))
   end
 
   def init(opts) do
