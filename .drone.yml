@@ -16,7 +16,7 @@ steps:
     PLUGIN_DEPTH: 5
 
 - name: cache-restore
-  image: public.ecr.aws/prima/drone-tools:1.21.2
+  image: public.ecr.aws/prima/drone-tools:1.21.3
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - cache-restore
@@ -31,7 +31,7 @@ steps:
   - git-clone
 
 - name: check-secrets
-  image: public.ecr.aws/prima/drone-tools:1.21.2
+  image: public.ecr.aws/prima/drone-tools:1.21.3
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - check-secrets-grants
@@ -42,14 +42,14 @@ steps:
   - git-clone
 
 - name: check-public-docker-images
-  image: public.ecr.aws/prima/drone-tools:1.21.2
+  image: public.ecr.aws/prima/drone-tools:1.21.3
   commands:
   - check-public-docker-images
   depends_on:
   - git-clone
 
 - name: build-image
-  image: public.ecr.aws/prima/drone-tools:1.21.2
+  image: public.ecr.aws/prima/drone-tools:1.21.3
   commands:
   - sed -i 's/USER app/USER root/g' ./Dockerfile
   - docker build -t prima/amqpx-ci:${DRONE_COMMIT} ./
@@ -121,7 +121,7 @@ steps:
   - elixir-compile
 
 - name: cache-save
-  image: public.ecr.aws/prima/drone-tools:1.21.2
+  image: public.ecr.aws/prima/drone-tools:1.21.3
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - cache-save _build deps
@@ -150,6 +150,13 @@ services:
     RABBITMQ_PASSWORD: amqpx
     RABBITMQ_USERNAME: amqpx
     RABBITMQ_VHOST: /
+
+- name: rabbit_two
+  image: public.ecr.aws/bitnami/rabbitmq:3.8
+  environment:
+    RABBITMQ_PASSWORD: amqpx
+    RABBITMQ_USERNAME: amqpx
+    RABBITMQ_VHOST: /two
 
 volumes:
 - name: docker
@@ -181,7 +188,7 @@ steps:
     PLUGIN_DEPTH: 5
 
 - name: cache-restore
-  image: public.ecr.aws/prima/drone-tools:1.21.2
+  image: public.ecr.aws/prima/drone-tools:1.21.3
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - cache-restore
@@ -196,7 +203,7 @@ steps:
   - git-clone
 
 - name: build-image
-  image: public.ecr.aws/prima/drone-tools:1.21.2
+  image: public.ecr.aws/prima/drone-tools:1.21.3
   commands:
   - sed -i 's/USER app/USER root/g' ./Dockerfile
   - docker build -t prima/amqpx-ci:${DRONE_COMMIT} ./
@@ -273,6 +280,6 @@ depends_on:
 
 ---
 kind: signature
-hmac: 2ece4ca777aa4a03f2e51978bf2f04076998b5f887f9fd34ced41e4acd02fdfa
+hmac: 1106a5cc56fa49f871ee25292707466ce0a7bc1bd1565aad8ab55972095de248
 
 ...

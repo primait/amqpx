@@ -1,4 +1,4 @@
-version: '2'
+version: "2"
 services:
   web:
     build: .
@@ -8,6 +8,7 @@ services:
     working_dir: $PWD
     links:
       - rabbit
+      - rabbit_two
 
   rabbit:
     image: rabbitmq:3-management
@@ -17,3 +18,12 @@ services:
       RABBITMQ_DEFAULT_PASS: amqpx
     ports:
       - "23555:15672"
+
+  rabbit_two:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_VHOST: /two
+      RABBITMQ_DEFAULT_USER: amqpx
+      RABBITMQ_DEFAULT_PASS: amqpx
+    ports:
+      - "23556:15672"

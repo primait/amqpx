@@ -18,6 +18,18 @@ config :amqpx,
   ]
 
 config :amqpx,
+  amqp_connection_two: [
+    name: ConnectionTwo,
+    username: "amqpx",
+    password: "amqpx",
+    host: "rabbit_two",
+    virtual_host: "/two",
+    heartbeat: 30,
+    connection_timeout: 10_000,
+    obfuscate_password: false
+  ]
+
+config :amqpx,
   consumers: [
     %{
       handler_module: Amqpx.Test.Support.Consumer1
@@ -32,6 +44,10 @@ config :amqpx,
     %{
       handler_module: Amqpx.Test.Support.HandleRejectionConsumer,
       backoff: 10
+    },
+    %{
+      handler_module: Amqpx.Test.Support.ConsumerConnectionTwo,
+      connection_name: ConnectionTwo
     }
   ]
 
@@ -81,6 +97,13 @@ config :amqpx, Amqpx.Test.Support.HandleRejectionConsumer, %{
   ]
 }
 
+config :amqpx, Amqpx.Test.Support.ConsumerConnectionTwo, %{
+  queue: "connection-two",
+  exchanges: [
+    %{name: "connection-two", type: :topic, routing_keys: ["amqpx.test_connection_two"]}
+  ]
+}
+
 config :amqpx, :producer, %{
   publish_timeout: 5_000,
   publisher_confirms: false,
@@ -100,6 +123,20 @@ config :amqpx, :producer2, %{
   exchanges: [
     %{
       name: "test_exchange_2",
+      type: :topic,
+      opts: [durable: true]
+    }
+  ]
+}
+
+config :amqpx, :producer_connection_two, %{
+  name: :producer_connection_two,
+  connection_name: ConnectionTwo,
+  publish_timeout: 5_000,
+  publisher_confirms: true,
+  exchanges: [
+    %{
+      name: "test_exchange_connection_two",
       type: :topic,
       opts: [durable: true]
     }
