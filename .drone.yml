@@ -96,7 +96,6 @@ steps:
 - name: elixir-test
   image: prima/amqpx-ci:${DRONE_COMMIT}
   commands:
-  - sleep 15
   - mix test
   environment:
     MIX_ENV: test
