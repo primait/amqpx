@@ -4,6 +4,7 @@ defmodule Amqpx.Test.AmqpxTest do
   alias Amqpx.Test.Support.Consumer1
   alias Amqpx.Test.Support.Consumer2
   alias Amqpx.Test.Support.HandleRejectionConsumer
+  alias Amqpx.Test.Support.NoRequeueConsumer
   alias Amqpx.Test.Support.ConsumerConnectionTwo
   alias Amqpx.Test.Support.Producer1
   alias Amqpx.Test.Support.Producer2
@@ -107,6 +108,30 @@ defmodule Amqpx.Test.AmqpxTest do
 
       assert publish_result == :ok
       assert_receive {:ok, ^error_message}, 1_000
+    end
+  end
+
+  test "e2e: messages should not be re-enqueued when re-enqueue option is disabled" do
+    test_pid = self()
+    error_message = "test_error"
+
+    with_mock(NoRequeueConsumer,
+      handle_message: fn _, _, _ ->
+        mock_called =
+          case Process.get(:times_mock_called) do
+            nil -> 1
+            n -> n + 1
+          end
+
+        Process.put(:times_mock_called, mock_called)
+
+        send(test_pid, {:handled_message, mock_called})
+        raise error_message
+      end
+    ) do
+      :ok = Amqpx.Gen.Producer.publish("topic-no-requeue", "amqpx.test-no-requeue", "some-message", redeliver: false)
+      assert_receive {:handled_message, 1}
+      refute_receive {:handled_message, 2}
     end
   end
 

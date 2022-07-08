@@ -13,7 +13,8 @@ defmodule Amqpx.Gen.Consumer do
     :handler_state,
     prefetch_count: 50,
     backoff: 5_000,
-    connection_name: Amqpx.Gen.ConnectionManager
+    connection_name: Amqpx.Gen.ConnectionManager,
+    requeue_on_reject: true
   ]
 
   @type state() :: %__MODULE__{}
@@ -191,7 +192,8 @@ defmodule Amqpx.Gen.Consumer do
          %__MODULE__{
            handler_module: handler_module,
            handler_state: handler_state,
-           backoff: backoff
+           backoff: backoff,
+           requeue_on_reject: requeue_on_reject
          } = state
        ) do
     {:ok, handler_state} = handler_module.handle_message(message, meta, handler_state)
@@ -212,7 +214,7 @@ defmodule Amqpx.Gen.Consumer do
           handler_module.handle_message_rejection(message, e)
         end
 
-        Basic.reject(state.channel, tag, requeue: !redelivered)
+        Basic.reject(state.channel, tag, requeue: requeue_on_reject && !redelivered)
       end)
 
       state
