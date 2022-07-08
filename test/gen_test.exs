@@ -127,6 +127,34 @@ defmodule Amqpx.Test.AmqpxTest do
 
         send(test_pid, {:handled_message, mock_called})
         raise error_message
+      end,
+      handle_message_rejection: fn _, _ -> :ok end
+    ) do
+      :ok = Amqpx.Gen.Producer.publish("topic-no-requeue", "amqpx.test-no-requeue", "some-message", redeliver: false)
+      assert_receive {:handled_message, 1}
+      refute_receive {:handled_message, 2}
+    end
+  end
+
+  test "e2e: handle_message_reject should be called upon first time when re-enqueue option is disabled" do
+    test_pid = self()
+    error_message = "test-error-requeue"
+
+    with_mock(NoRequeueConsumer,
+      handle_message: fn _, _, _ ->
+        raise error_message
+      end,
+      handle_message_rejection: fn _, _ ->
+        mock_called =
+          case Process.get(:times_mock_called) do
+            nil -> 1
+            n -> n + 1
+          end
+
+        Process.put(:times_mock_called, mock_called)
+
+        send(test_pid, {:handled_message, mock_called})
+        :ok
       end
     ) do
       :ok = Amqpx.Gen.Producer.publish("topic-no-requeue", "amqpx.test-no-requeue", "some-message", redeliver: false)

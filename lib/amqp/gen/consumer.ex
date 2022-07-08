@@ -208,7 +208,7 @@ defmodule Amqpx.Gen.Consumer do
 
         is_message_to_reject =
           function_exported?(handler_module, :handle_message_rejection, 2) &&
-            redelivered
+            (!requeue_on_reject || (redelivered && requeue_on_reject))
 
         if is_message_to_reject do
           handler_module.handle_message_rejection(message, e)
