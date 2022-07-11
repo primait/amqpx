@@ -108,8 +108,7 @@ config :amqpx, Amqpx.Test.Support.NoRequeueConsumer, %{
     %{
       name: "topic-no-requeue",
       type: :topic,
-      routing_keys: ["amqpx.test-no-requeue"],
-      opts: [redelivered: true]
+      routing_keys: ["amqpx.test-no-requeue"]
     }
   ]
 }
