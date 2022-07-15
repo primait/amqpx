@@ -4,6 +4,7 @@ defmodule Amqpx.Test.AmqpxTest do
   alias Amqpx.Test.Support.Consumer1
   alias Amqpx.Test.Support.Consumer2
   alias Amqpx.Test.Support.HandleRejectionConsumer
+  alias Amqpx.Test.Support.NoRequeueConsumer
   alias Amqpx.Test.Support.ConsumerConnectionTwo
   alias Amqpx.Test.Support.Producer1
   alias Amqpx.Test.Support.Producer2
@@ -96,17 +97,93 @@ defmodule Amqpx.Test.AmqpxTest do
 
   test "e2e: should handle message rejected when handle message fails" do
     test_pid = self()
-    error_message = "test_error"
 
     with_mock(HandleRejectionConsumer,
-      handle_message: fn _, _, _ -> raise error_message end,
-      handle_message_rejection: fn _, error -> send(test_pid, {:ok, error.message}) end
+      handle_message: fn _, _, _ ->
+        mock_called =
+          case Process.get(:times_mock_called) do
+            nil -> 1
+            n -> n + 1
+          end
+
+        Process.put(:times_mock_called, mock_called)
+
+        raise "test_error ##{mock_called}"
+      end,
+      handle_message_rejection: fn _, error ->
+        send(test_pid, {:ok, error.message})
+      end
     ) do
       publish_result =
         Amqpx.Gen.Producer.publish("topic-rejection", "amqpx.test-rejection", "some-message", redeliver: false)
 
       assert publish_result == :ok
-      assert_receive {:ok, ^error_message}, 1_000
+
+      # ensure handle_message_rejection is called only the second time
+      assert_receive {:ok, "test_error #2"}, 1_000
+    end
+  end
+
+  test "e2e: messages should not be re-enqueued when re-enqueue option is disabled" do
+    test_pid = self()
+    error_message = "test_error"
+
+    with_mock(NoRequeueConsumer,
+      handle_message: fn _, _, _ ->
+        mock_called =
+          case Process.get(:times_mock_called) do
+            nil -> 1
+            n -> n + 1
+          end
+
+        Process.put(:times_mock_called, mock_called)
+
+        send(test_pid, {:handled_message, mock_called})
+        raise error_message
+      end,
+      handle_message_rejection: fn _, _ -> :ok end
+    ) do
+      :ok = Amqpx.Gen.Producer.publish("topic-no-requeue", "amqpx.test-no-requeue", "some-message", redeliver: false)
+      assert_receive {:handled_message, 1}
+      refute_receive {:handled_message, 2}
+    end
+  end
+
+  test "e2e: handle_message_reject should be called upon first time when re-enqueue option is disabled" do
+    test_pid = self()
+    error_message = "test-error-requeue"
+
+    with_mock(NoRequeueConsumer,
+      handle_message: fn _, _, _ ->
+        mock_called =
+          case Process.get(:times_mock_handle_message_called) do
+            nil -> 1
+            n -> n + 1
+          end
+
+        Process.put(:times_mock_handle_message_called, mock_called)
+
+        raise "#{error_message} ##{mock_called}"
+      end,
+      handle_message_rejection: fn _, error ->
+        mock_called =
+          case Process.get(:times_mock_handle_message_rejection_called) do
+            nil -> 1
+            n -> n + 1
+          end
+
+        Process.put(:times_mock_handle_message_rejection_called, mock_called)
+
+        send(test_pid, {:handled_message, {error.message, mock_called}})
+        :ok
+      end
+    ) do
+      :ok = Amqpx.Gen.Producer.publish("topic-no-requeue", "amqpx.test-no-requeue", "some-message", redeliver: false)
+
+      # ensure the handle_message_rejection is called exactly one time after the handle_message call.
+      err_msg = {"#{error_message} #1", 1}
+      assert_receive {:handled_message, ^err_msg}
+      refute_receive {:handled_message, _}, 1_000
     end
   end
 

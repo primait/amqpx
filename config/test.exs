@@ -46,6 +46,11 @@ config :amqpx,
       backoff: 10
     },
     %{
+      handler_module: Amqpx.Test.Support.NoRequeueConsumer,
+      backoff: 10,
+      requeue_on_reject: false
+    },
+    %{
       handler_module: Amqpx.Test.Support.ConsumerConnectionTwo,
       connection_name: ConnectionTwo
     }
@@ -93,6 +98,17 @@ config :amqpx, Amqpx.Test.Support.HandleRejectionConsumer, %{
       type: :topic,
       routing_keys: ["amqpx.test-rejection"],
       opts: [redelivered: true]
+    }
+  ]
+}
+
+config :amqpx, Amqpx.Test.Support.NoRequeueConsumer, %{
+  queue: "test-no-requeue",
+  exchanges: [
+    %{
+      name: "topic-no-requeue",
+      type: :topic,
+      routing_keys: ["amqpx.test-no-requeue"]
     }
   ]
 }
