@@ -14,7 +14,8 @@ defmodule Amqpx.Gen.Producer do
     publish_timeout: 1_000,
     backoff: 5_000,
     exchanges: [],
-    connection_name: Amqpx.Gen.ConnectionManager
+    connection_name: Amqpx.Gen.ConnectionManager,
+    publish_retry_options: []
   ]
 
   # Public API
@@ -25,7 +26,9 @@ defmodule Amqpx.Gen.Producer do
   end
 
   def init(opts) do
+    IO.inspect(opts)
     state = struct(__MODULE__, opts)
+    IO.inspect(state)
     Process.send(self(), :setup, [])
     {:ok, state}
   end
@@ -134,18 +137,17 @@ defmodule Amqpx.Gen.Producer do
           publish_timeout: publish_timeout
         } = state
       ) do
-    with :ok <-
-           Basic.publish(
-             channel,
-             exchange,
-             routing_key,
-             payload,
-             Keyword.merge([persistent: true], options)
-           ),
-         {:confirm, true} <-
-           {:confirm, confirm_delivery(publisher_confirms, publish_timeout, channel)} do
-      {:reply, :ok, state}
-    else
+    case do_retry_publish(
+           channel,
+           exchange,
+           routing_key,
+           payload,
+           [publisher_confirms: publisher_confirms, publish_timeout: publish_timeout],
+           Keyword.merge([persistent: true], options)
+         ) do
+      {:confirm, true} ->
+        {:reply, :ok, state}
+
       {:error, reason} ->
         Logger.error("cannot publish message to broker: #{inspect(reason)}")
         {:stop, reason, {:error, reason}, state}
@@ -161,6 +163,28 @@ defmodule Amqpx.Gen.Producer do
   end
 
   # Private functions
+
+  defp do_retry_publish(channel, exchange, routing_key, payload, publish_options, options) do
+    case do_publish(channel, exchange, routing_key, payload, publish_options, options) do
+      {:confirm, true} -> {:confirm, true}
+      _error -> do_publish(channel, exchange, routing_key, payload, publish_options, options)
+    end
+  end
+
+  defp do_publish(channel, exchange, routing_key, payload, publish_options, options) do
+    with :ok <-
+           Basic.publish(
+             channel,
+             exchange,
+             routing_key,
+             payload,
+             options
+           ) do
+      publish_confirms = Keyword.get(publish_options, :publisher_confirms, false)
+      publish_timeout = Keyword.get(publish_options, :publish_timeout)
+      {:confirm, confirm_delivery(publish_confirms, publish_timeout, channel)}
+    end
+  end
 
   @spec confirm_delivery(boolean(), integer(), Channel.t()) :: boolean() | :timeout
   defp confirm_delivery(false, _, _), do: true

@@ -158,3 +158,22 @@ config :amqpx, :producer_connection_two, %{
     }
   ]
 }
+
+config :amqpx, :producer_with_retry, %{
+  name: :producer_with_retry,
+  publish_timeout: 5_000,
+  publisher_confirms: false,
+  exchanges: [
+    %{
+      name: "test_exchange_with_retry",
+      type: :topic,
+      opts: [durable: true]
+    }
+  ],
+  publish_retry_options: [
+    max_retries: 5,
+    retry_policy: [
+      :on_publish_error
+    ]
+  ]
+}

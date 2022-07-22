@@ -9,6 +9,7 @@ defmodule Amqpx.Test.AmqpxTest do
   alias Amqpx.Test.Support.Producer1
   alias Amqpx.Test.Support.Producer2
   alias Amqpx.Test.Support.Producer3
+  alias Amqpx.Test.Support.ProducerWithRetry
   alias Amqpx.Test.Support.ProducerConnectionTwo
 
   import Mock
@@ -25,6 +26,7 @@ defmodule Amqpx.Test.AmqpxTest do
     {:ok, _} = Amqpx.Gen.Producer.start_link(Application.fetch_env!(:amqpx, :producer))
     {:ok, _} = Amqpx.Gen.Producer.start_link(Application.fetch_env!(:amqpx, :producer2))
     {:ok, _} = Amqpx.Gen.Producer.start_link(Application.fetch_env!(:amqpx, :producer_connection_two))
+    {:ok, _} = Amqpx.Gen.Producer.start_link(Application.fetch_env!(:amqpx, :producer_with_retry))
 
     Enum.each(Application.fetch_env!(:amqpx, :consumers), &Amqpx.Gen.Consumer.start_link(&1))
 
@@ -200,6 +202,53 @@ defmodule Amqpx.Test.AmqpxTest do
       :timer.sleep(50)
       assert_called(Consumer1.handle_message(Jason.encode!(payload), :_, :_))
       assert_called(ConsumerConnectionTwo.handle_message(Jason.encode!(payload), :_, :_))
+    end
+  end
+
+  describe "when publish retry configurations are enabled" do
+    test "should retry publish in case of publish error" do
+      payload = %{test: 1}
+
+      with_mock(Amqpx.Basic,
+        publish: fn _channel, _exchange, _routing_key, _payload, _options ->
+          case Process.get(:times_mock_publish_called) do
+            nil ->
+              Process.put(:times_mock_publish_called, 1)
+              {:error, :fail}
+
+            1 ->
+              :ok
+          end
+        end
+      ) do
+        assert :ok = Producer1.send_payload(payload)
+        assert_called_exactly(Amqpx.Basic.publish(:_, :_, :_, :_, :_), 2)
+      end
+    end
+
+    test "test retry configurations" do
+      payload = %{test: 1}
+
+      with_mock(Amqpx.Basic,
+        publish: fn _channel, _exchange, _routing_key, _payload, _options ->
+          {:error, :fail}
+          # case Process.get(:times_mock_publish_called2) do
+          #   nil ->
+          #     Process.put(:times_mock_publish_called2, 1)
+          #     {:error, :fail}
+
+          #   5 ->
+          #     :ok
+
+          #   n ->
+          #     Process.put(:times_mock_publish_called2, n + 1)
+          #     {:error, :fail}
+          # end
+        end
+      ) do
+        assert :ok = ProducerWithRetry.send_payload(payload)
+        assert_called_exactly(Amqpx.Basic.publish(:_, :_, :_, :_, :_), 2)
+      end
     end
   end
 end
