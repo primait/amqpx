@@ -249,33 +249,47 @@ defmodule Amqpx.Test.AmqpxTest do
           end
         end
       ) do
-        assert :ok = Producer1.send_payload(payload)
+        assert :ok = ProducerWithRetry.send_payload(payload)
         assert_called_exactly(Amqpx.Basic.publish(:_, :_, :_, :_, :_), 2)
       end
     end
+  end
 
-    test "test retry configurations" do
+  # test "test retry configurations" do
+  #   payload = %{test: 1}
+
+  #   with_mock(Amqpx.Basic,
+  #     publish: fn _channel, _exchange, _routing_key, _payload, _options ->
+  #       case Process.get(:times_mock_publish_called_2) do
+  #         nil ->
+  #           Process.put(:times_mock_publish_called_2, 1)
+  #           {:error, :fail}
+
+  #         5 ->
+  #           :ok
+
+  #         n ->
+  #           Process.put(:times_mock_publish_called_2, n + 1)
+  #           {:error, :fail}
+  #       end
+  #     end
+  #   ) do
+  #     assert :ok = ProducerWithRetry.send_payload(payload)
+  #     assert_called_exactly(Amqpx.Basic.publish(:_, :_, :_, :_, :_), 5)
+  #   end
+  # end
+
+  describe "when publish retry configurations are not enabled" do
+    test "should not retry publish in case of error" do
       payload = %{test: 1}
 
       with_mock(Amqpx.Basic,
         publish: fn _channel, _exchange, _routing_key, _payload, _options ->
           {:error, :fail}
-          # case Process.get(:times_mock_publish_called2) do
-          #   nil ->
-          #     Process.put(:times_mock_publish_called2, 1)
-          #     {:error, :fail}
-
-          #   5 ->
-          #     :ok
-
-          #   n ->
-          #     Process.put(:times_mock_publish_called2, n + 1)
-          #     {:error, :fail}
-          # end
         end
       ) do
-        assert :ok = ProducerWithRetry.send_payload(payload)
-        assert_called_exactly(Amqpx.Basic.publish(:_, :_, :_, :_, :_), 2)
+        assert :error = Producer1.send_payload(payload)
+        assert_called_exactly(Amqpx.Basic.publish(:_, :_, :_, :_, :_), 1)
       end
     end
   end

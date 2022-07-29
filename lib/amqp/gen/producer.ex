@@ -26,9 +26,7 @@ defmodule Amqpx.Gen.Producer do
   end
 
   def init(opts) do
-    IO.inspect(opts)
     state = struct(__MODULE__, opts)
-    IO.inspect(state)
     Process.send(self(), :setup, [])
     {:ok, state}
   end
@@ -134,31 +132,62 @@ defmodule Amqpx.Gen.Producer do
         %{
           channel: channel,
           publisher_confirms: publisher_confirms,
-          publish_timeout: publish_timeout
+          publish_timeout: publish_timeout,
+          publish_retry_options: publish_retry_options
         } = state
       ) do
-    case do_retry_publish(
-           channel,
-           exchange,
-           routing_key,
-           payload,
-           [publisher_confirms: publisher_confirms, publish_timeout: publish_timeout],
-           Keyword.merge([persistent: true], options)
-         ) do
-      {:confirm, true} ->
-        {:reply, :ok, state}
+    retry_policy = Keyword.get(publish_retry_options, :retry_policy, [])
 
-      {:error, reason} ->
-        Logger.error("cannot publish message to broker: #{inspect(reason)}")
-        {:stop, reason, {:error, reason}, state}
+    case retry_policy do
+      [] ->
+        case do_publish(
+               channel,
+               exchange,
+               routing_key,
+               payload,
+               [publisher_confirms: publisher_confirms, publish_timeout: publish_timeout],
+               Keyword.merge([persistent: true], options)
+             ) do
+          {:confirm, true} ->
+            {:reply, :ok, state}
 
-      {:confirm, :timeout} ->
-        Logger.error("cannot publish message to broker: publisher timeout")
-        {:stop, "publisher timeout", {:error, :timeout}, state}
+          {:error, reason} ->
+            Logger.error("cannot publish message to broker: #{inspect(reason)}")
+            {:stop, reason, {:error, reason}, state}
 
-      {:confirm, false} ->
-        Logger.error("cannot publish message to broker: broker nack")
-        {:stop, "publisher error", {:error, :nack}, state}
+          {:confirm, :timeout} ->
+            Logger.error("cannot publish message to broker: publisher timeout")
+            {:stop, "publisher timeout", {:error, :timeout}, state}
+
+          {:confirm, false} ->
+            Logger.error("cannot publish message to broker: broker nack")
+            {:stop, "publisher error", {:error, :nack}, state}
+        end
+
+      _any ->
+        case do_retry_publish(
+               channel,
+               exchange,
+               routing_key,
+               payload,
+               [publisher_confirms: publisher_confirms, publish_timeout: publish_timeout],
+               Keyword.merge([persistent: true], options)
+             ) do
+          {:confirm, true} ->
+            {:reply, :ok, state}
+
+          {:error, reason} ->
+            Logger.error("cannot publish message to broker: #{inspect(reason)}")
+            {:stop, reason, {:error, reason}, state}
+
+          {:confirm, :timeout} ->
+            Logger.error("cannot publish message to broker: publisher timeout")
+            {:stop, "publisher timeout", {:error, :timeout}, state}
+
+          {:confirm, false} ->
+            Logger.error("cannot publish message to broker: broker nack")
+            {:stop, "publisher error", {:error, :nack}, state}
+        end
     end
   end
 
