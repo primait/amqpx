@@ -15,20 +15,48 @@ defmodule Amqpx.Test.AmqpxTest do
   import Mock
 
   setup_all do
-    Amqpx.Gen.ConnectionManager.start_link(%{
-      connection_params: Application.fetch_env!(:amqpx, :amqp_connection)
+    start_supervised!(%{
+      id: :amqp_connection,
+      start:
+        {Amqpx.Gen.ConnectionManager, :start_link,
+         [%{connection_params: Application.fetch_env!(:amqpx, :amqp_connection)}]}
     })
 
-    Amqpx.Gen.ConnectionManager.start_link(%{
-      connection_params: Application.fetch_env!(:amqpx, :amqp_connection_two)
+    start_supervised!(%{
+      id: :amqp_connection_two,
+      start:
+        {Amqpx.Gen.ConnectionManager, :start_link,
+         [%{connection_params: Application.fetch_env!(:amqpx, :amqp_connection_two)}]}
     })
 
-    {:ok, _} = Amqpx.Gen.Producer.start_link(Application.fetch_env!(:amqpx, :producer))
-    {:ok, _} = Amqpx.Gen.Producer.start_link(Application.fetch_env!(:amqpx, :producer2))
-    {:ok, _} = Amqpx.Gen.Producer.start_link(Application.fetch_env!(:amqpx, :producer_connection_two))
-    {:ok, _} = Amqpx.Gen.Producer.start_link(Application.fetch_env!(:amqpx, :producer_with_retry))
+    start_supervised!(%{
+      id: :producer,
+      start: {Amqpx.Gen.Producer, :start_link, [Application.fetch_env!(:amqpx, :producer)]}
+    })
 
-    Enum.each(Application.fetch_env!(:amqpx, :consumers), &Amqpx.Gen.Consumer.start_link(&1))
+    start_supervised!(%{
+      id: :producer2,
+      start: {Amqpx.Gen.Producer, :start_link, [Application.fetch_env!(:amqpx, :producer2)]}
+    })
+
+    start_supervised!(%{
+      id: :producer_connection_two,
+      start: {Amqpx.Gen.Producer, :start_link, [Application.fetch_env!(:amqpx, :producer_connection_two)]}
+    })
+
+    start_supervised!(%{
+      id: :producer_with_retry,
+      start: {Amqpx.Gen.Producer, :start_link, [Application.fetch_env!(:amqpx, :producer_with_retry)]}
+    })
+
+    Application.fetch_env!(:amqpx, :consumers)
+    |> Enum.with_index()
+    |> Enum.each(fn {opts, id} ->
+      start_supervised!(%{
+        id: :"consumer_#{id}",
+        start: {Amqpx.Gen.Consumer, :start_link, [opts]}
+      })
+    end)
 
     :timer.sleep(1_000)
     :ok
