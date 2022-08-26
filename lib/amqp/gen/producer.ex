@@ -8,6 +8,9 @@ defmodule Amqpx.Gen.Producer do
 
   @type state() :: %__MODULE__{}
 
+  @default_max_retries 0
+  @default_retry_policy []
+
   defstruct [
     :channel,
     :publisher_confirms,
@@ -26,9 +29,14 @@ defmodule Amqpx.Gen.Producer do
   end
 
   def init(opts) do
-    state = struct(__MODULE__, opts)
-    Process.send(self(), :setup, [])
-    {:ok, state}
+    case validate_configuration(opts) do
+      {:ok, state} ->
+        Process.send(self(), :setup, [])
+        {:ok, state}
+
+      {:error, reason} ->
+        {:stop, reason}
+    end
   end
 
   @spec publish(
@@ -137,7 +145,7 @@ defmodule Amqpx.Gen.Producer do
         } = state
       ) do
     retry_policy = Keyword.get(publish_retry_options, :retry_policy, [])
-    max_retries = Keyword.get(publish_retry_options, :max_retries, 0)
+    max_retries = Keyword.get(publish_retry_options, :max_retries, @default_max_retries)
 
     publish_options = %{
       publisher_confirms: publisher_confirms,
@@ -252,5 +260,31 @@ defmodule Amqpx.Gen.Producer do
 
   defp declare_exchanges(exchanges, channel) do
     Enum.each(exchanges, &Helper.setup_exchange(channel, &1))
+  end
+
+  # Configuration
+
+  # Validates configuration and returns the genserver's state if successful, or error
+  defp validate_configuration(%{} = opts) do
+    publish_retry_options = Map.get(opts, :publish_retry_options, [])
+
+    ok_or_validation_error = validate_retry_policy(publish_retry_options)
+
+    if ok_or_validation_error == :ok do
+      {:ok, struct(__MODULE__, opts)}
+    else
+      ok_or_validation_error
+    end
+  end
+
+  defp validate_retry_policy(publish_retry_options) do
+    max_retries = Keyword.get(publish_retry_options, :max_retries, @default_max_retries)
+    retry_policy = Keyword.get(publish_retry_options, :retry_policy, @default_retry_policy)
+
+    if not Enum.empty?(retry_policy) and max_retries == 0 do
+      {:error, {:invalid_configuration, "when retry policy is configured, max_retries must be > 0"}}
+    else
+      :ok
+    end
   end
 end
