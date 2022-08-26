@@ -9,7 +9,10 @@ defmodule Amqpx.Gen.Producer do
   @type state() :: %__MODULE__{}
 
   @default_max_retries 0
-  @default_retry_policy []
+  @default_retry_policy %{
+    on_publish_rejected: false,
+    on_publish_error: false
+  }
 
   defstruct [
     :channel,
@@ -144,13 +147,14 @@ defmodule Amqpx.Gen.Producer do
           publish_retry_options: publish_retry_options
         } = state
       ) do
-    retry_policy = Keyword.get(publish_retry_options, :retry_policy, [])
+    retry_policy = Keyword.get(publish_retry_options, :retry_policy, %{})
     max_retries = Keyword.get(publish_retry_options, :max_retries, @default_max_retries)
 
     publish_options = %{
       publisher_confirms: publisher_confirms,
       publish_timeout: publish_timeout,
-      max_retries: max_retries
+      max_retries: max_retries,
+      retry_policy: retry_policy
     }
 
     result =
@@ -211,20 +215,40 @@ defmodule Amqpx.Gen.Producer do
        ),
        do: do_publish(channel, exchange, routing_key, payload, publish_options, options)
 
-  defp do_retry_publish(channel, exchange, routing_key, payload, %{max_retries: max_retries} = publish_options, options) do
+  defp do_retry_publish(
+         channel,
+         exchange,
+         routing_key,
+         payload,
+         %{max_retries: max_retries, retry_policy: retry_policy} = publish_options,
+         options
+       ) do
+    retry_publish = fn ->
+      do_retry_publish(
+        channel,
+        exchange,
+        routing_key,
+        payload,
+        %{publish_options | max_retries: max_retries - 1},
+        options
+      )
+    end
+
     case do_publish(channel, exchange, routing_key, payload, publish_options, options) do
       {:confirm, true} ->
         {:confirm, true}
 
-      _error ->
-        do_retry_publish(
-          channel,
-          exchange,
-          routing_key,
-          payload,
-          %{publish_options | max_retries: max_retries - 1},
-          options
-        )
+      error ->
+        case {error, retry_policy} do
+          {{:confirm, false}, %{on_publish_rejected: true}} ->
+            retry_publish.()
+
+          {{:error, _}, %{on_publish_error: true}} ->
+            retry_publish.()
+
+          _ ->
+            error
+        end
     end
   end
 
@@ -271,7 +295,12 @@ defmodule Amqpx.Gen.Producer do
     ok_or_validation_error = validate_retry_policy(publish_retry_options)
 
     if ok_or_validation_error == :ok do
-      {:ok, struct(__MODULE__, opts)}
+      retry_policy_opts =
+        publish_retry_options
+        |> Keyword.get(:retry_policy)
+        |> Enum.reduce(@default_retry_policy, fn policy, acc -> Map.put(acc, policy, true) end)
+
+      {:ok, struct(__MODULE__, put_in(opts, [:publish_retry_options, :retry_policy], retry_policy_opts))}
     else
       ok_or_validation_error
     end
@@ -279,7 +308,7 @@ defmodule Amqpx.Gen.Producer do
 
   defp validate_retry_policy(publish_retry_options) do
     max_retries = Keyword.get(publish_retry_options, :max_retries, @default_max_retries)
-    retry_policy = Keyword.get(publish_retry_options, :retry_policy, @default_retry_policy)
+    retry_policy = Keyword.get(publish_retry_options, :retry_policy, [])
 
     if not Enum.empty?(retry_policy) and max_retries == 0 do
       {:error, {:invalid_configuration, "when retry policy is configured, max_retries must be > 0"}}
