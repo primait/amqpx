@@ -137,6 +137,7 @@ defmodule Amqpx.Gen.Producer do
         } = state
       ) do
     retry_policy = Keyword.get(publish_retry_options, :retry_policy, [])
+    max_retries = Keyword.get(publish_retry_options, :max_retries, 0)
 
     result =
       case retry_policy do
@@ -156,7 +157,7 @@ defmodule Amqpx.Gen.Producer do
             exchange,
             routing_key,
             payload,
-            [publisher_confirms: publisher_confirms, publish_timeout: publish_timeout],
+            [publisher_confirms: publisher_confirms, publish_timeout: publish_timeout, max_retries: max_retries],
             Keyword.merge([persistent: true], options)
           )
       end
@@ -185,10 +186,15 @@ defmodule Amqpx.Gen.Producer do
   end
 
   defp do_retry_publish(channel, exchange, routing_key, payload, publish_options, options) do
-    case do_publish(channel, exchange, routing_key, payload, publish_options, options) do
-      {:confirm, true} -> {:confirm, true}
-      _error -> do_publish(channel, exchange, routing_key, payload, publish_options, options)
-    end
+    max_retries = Keyword.get(publish_options, :max_retries, 0)
+
+    1..max_retries
+    |> Enum.reduce_while({}, fn _, _ ->
+      case do_publish(channel, exchange, routing_key, payload, publish_options, options) do
+        {:confirm, true} -> {:halt, {:confirm, true}}
+        error -> {:cont, error}
+      end
+    end)
   end
 
   defp do_publish(channel, exchange, routing_key, payload, publish_options, options) do
