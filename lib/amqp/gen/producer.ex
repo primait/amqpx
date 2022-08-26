@@ -139,6 +139,12 @@ defmodule Amqpx.Gen.Producer do
     retry_policy = Keyword.get(publish_retry_options, :retry_policy, [])
     max_retries = Keyword.get(publish_retry_options, :max_retries, 0)
 
+    publish_options = %{
+      publisher_confirms: publisher_confirms,
+      publish_timeout: publish_timeout,
+      max_retries: max_retries
+    }
+
     result =
       case retry_policy do
         [] ->
@@ -147,7 +153,7 @@ defmodule Amqpx.Gen.Producer do
             exchange,
             routing_key,
             payload,
-            [publisher_confirms: publisher_confirms, publish_timeout: publish_timeout],
+            publish_options,
             Keyword.merge([persistent: true], options)
           )
 
@@ -157,7 +163,7 @@ defmodule Amqpx.Gen.Producer do
             exchange,
             routing_key,
             payload,
-            [publisher_confirms: publisher_confirms, publish_timeout: publish_timeout, max_retries: max_retries],
+            publish_options,
             Keyword.merge([persistent: true], options)
           )
       end
@@ -185,19 +191,46 @@ defmodule Amqpx.Gen.Producer do
     end
   end
 
-  defp do_retry_publish(channel, exchange, routing_key, payload, publish_options, options) do
-    max_retries = Keyword.get(publish_options, :max_retries, 0)
+  defp do_retry_publish(
+         channel,
+         exchange,
+         routing_key,
+         payload,
+         %{
+           max_retries: 1
+         } = publish_options,
+         options
+       ),
+       do: do_publish(channel, exchange, routing_key, payload, publish_options, options)
 
-    1..max_retries
-    |> Enum.reduce_while({}, fn _, _ ->
-      case do_publish(channel, exchange, routing_key, payload, publish_options, options) do
-        {:confirm, true} -> {:halt, {:confirm, true}}
-        error -> {:cont, error}
-      end
-    end)
+  defp do_retry_publish(channel, exchange, routing_key, payload, %{max_retries: max_retries} = publish_options, options) do
+    case do_publish(channel, exchange, routing_key, payload, publish_options, options) do
+      {:confirm, true} ->
+        {:confirm, true}
+
+      _error ->
+        do_retry_publish(
+          channel,
+          exchange,
+          routing_key,
+          payload,
+          %{publish_options | max_retries: max_retries - 1},
+          options
+        )
+    end
   end
 
-  defp do_publish(channel, exchange, routing_key, payload, publish_options, options) do
+  defp do_publish(
+         channel,
+         exchange,
+         routing_key,
+         payload,
+         %{
+           publisher_confirms: publisher_confirms,
+           publish_timeout: publish_timeout
+         },
+         options
+       ) do
     with :ok <-
            Basic.publish(
              channel,
@@ -206,9 +239,7 @@ defmodule Amqpx.Gen.Producer do
              payload,
              options
            ) do
-      publish_confirms = Keyword.get(publish_options, :publisher_confirms, false)
-      publish_timeout = Keyword.get(publish_options, :publish_timeout)
-      {:confirm, confirm_delivery(publish_confirms, publish_timeout, channel)}
+      {:confirm, confirm_delivery(publisher_confirms, publish_timeout, channel)}
     end
   end
 
