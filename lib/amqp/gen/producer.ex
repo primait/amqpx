@@ -297,10 +297,15 @@ defmodule Amqpx.Gen.Producer do
     if ok_or_validation_error == :ok do
       retry_policy_opts =
         publish_retry_options
-        |> Keyword.get(:retry_policy)
+        |> Keyword.get(:retry_policy, [])
         |> Enum.reduce(@default_retry_policy, fn policy, acc -> Map.put(acc, policy, true) end)
 
-      {:ok, struct(__MODULE__, put_in(opts, [:publish_retry_options, :retry_policy], retry_policy_opts))}
+      configurations =
+        opts
+        |> Map.put(:publish_retry_options, publish_retry_options)
+        |> put_in([:publish_retry_options, :retry_policy], retry_policy_opts)
+
+      {:ok, struct(__MODULE__, configurations)}
     else
       ok_or_validation_error
     end
