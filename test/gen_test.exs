@@ -255,8 +255,21 @@ defmodule Amqpx.Test.AmqpxTest do
           end
         end
       ) do
-        assert :ok = ProducerWithRetry.send_payload(payload)
+        assert :ok = ProducerWithRetry.send_payload_with_publish_error(payload)
         assert_called_exactly(Amqpx.Basic.publish(:_, :_, :_, :_, :_), 2)
+      end
+    end
+
+    test "should not retry publish in case of publish error if on_publish_error retry_policy is not set" do
+      payload = %{test: 1}
+
+      with_mock(Amqpx.Basic,
+        publish: fn _channel, _exchange, _routing_key, _payload, _options ->
+          {:error, :blocked}
+        end
+      ) do
+        assert :error = ProducerWithRetry.send_payload_without_publish_error(payload)
+        assert_called_exactly(Amqpx.Basic.publish(:_, :_, :_, :_, :_), 1)
       end
     end
 
@@ -288,7 +301,7 @@ defmodule Amqpx.Test.AmqpxTest do
           false
         end
       ) do
-        assert :error = ProducerWithRetry.send_payload(payload)
+        assert :error = ProducerWithRetry.send_payload_without_publish_rejected(payload)
         assert_called_exactly(Amqpx.Confirm.wait_for_confirms(:_, :_), 1)
       end
     end
@@ -313,7 +326,7 @@ defmodule Amqpx.Test.AmqpxTest do
         end
       end
     ) do
-      assert :ok = ProducerWithRetry.send_payload(payload)
+      assert :ok = ProducerWithRetry.send_payload_with_publish_error(payload)
       assert_called_exactly(Amqpx.Basic.publish(:_, :_, :_, :_, :_), 5)
     end
   end
