@@ -11,7 +11,8 @@ defmodule Amqpx.Gen.Producer do
   @default_max_retries 0
   @default_retry_policy %{
     on_publish_rejected: false,
-    on_publish_error: false
+    on_publish_error: false,
+    on_confirm_timeout: false
   }
 
   defstruct [
@@ -240,6 +241,9 @@ defmodule Amqpx.Gen.Producer do
 
       error ->
         case {error, retry_policy} do
+          {{:confirm, :timeout}, %{on_confirm_timeout: true}} ->
+            retry_publish.()
+
           {{:confirm, false}, %{on_publish_rejected: true}} ->
             retry_publish.()
 
