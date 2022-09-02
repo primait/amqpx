@@ -45,8 +45,8 @@ defmodule Amqpx.Test.AmqpxTest do
     })
 
     start_supervised!(%{
-      id: :producer_with_retry,
-      start: {Amqpx.Gen.Producer, :start_link, [Application.fetch_env!(:amqpx, :producer_with_retry)]}
+      id: :producer_with_retry_on_publish_error,
+      start: {Amqpx.Gen.Producer, :start_link, [Application.fetch_env!(:amqpx, :producer_with_retry_on_publish_error)]}
     })
 
     start_supervised!(%{

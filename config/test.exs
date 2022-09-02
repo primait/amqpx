@@ -159,8 +159,8 @@ config :amqpx, :producer_connection_two, %{
   ]
 }
 
-config :amqpx, :producer_with_retry, %{
-  name: :producer_with_retry,
+config :amqpx, :producer_with_retry_on_publish_error, %{
+  name: :producer_with_retry_on_publish_error,
   publish_timeout: 5_000,
   publisher_confirms: true,
   exchanges: [

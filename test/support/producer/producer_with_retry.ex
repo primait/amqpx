@@ -5,7 +5,12 @@ defmodule Amqpx.Test.Support.ProducerWithRetry do
 
   @spec send_payload(map) :: :ok | :error
   def send_payload(payload) do
-    Producer.publish_by(:producer_with_retry, "test_exchange_with_retry", "amqpx.test1", Jason.encode!(payload))
+    Producer.publish_by(
+      :producer_with_retry_on_publish_error,
+      "test_exchange_with_retry",
+      "amqpx.test1",
+      Jason.encode!(payload)
+    )
   end
 
   def send_payload_with_publish_rejected(payload) do
