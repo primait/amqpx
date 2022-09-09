@@ -215,3 +215,23 @@ config :amqpx, :producer_with_retry_on_confirm_delivery_timeout, %{
     ]
   ]
 }
+
+config :amqpx, :producer_with_retry_on_confirm_delivery_timeout_and_on_publish_error, %{
+  name: :producer_with_retry_on_confirm_delivery_timeout_and_on_publish_error,
+  publish_timeout: 5_000,
+  publisher_confirms: true,
+  exchanges: [
+    %{
+      name: "test_exchange_with_retry",
+      type: :topic,
+      opts: [durable: true]
+    }
+  ],
+  publish_retry_options: [
+    max_retries: 5,
+    retry_policy: [
+      :on_confirm_timeout,
+      :on_publish_error
+    ]
+  ]
+}

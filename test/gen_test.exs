@@ -62,6 +62,18 @@ defmodule Amqpx.Test.AmqpxTest do
          [Application.fetch_env!(:amqpx, :producer_with_retry_on_confirm_delivery_timeout)]}
     })
 
+    start_supervised!(%{
+      id: :producer_with_retry_on_confirm_delivery_timeout_and_on_publish_error,
+      start:
+        {Amqpx.Gen.Producer, :start_link,
+         [
+           Application.fetch_env!(
+             :amqpx,
+             :producer_with_retry_on_confirm_delivery_timeout_and_on_publish_error
+           )
+         ]}
+    })
+
     Application.fetch_env!(:amqpx, :consumers)
     |> Enum.with_index()
     |> Enum.each(fn {opts, id} ->
@@ -126,6 +138,7 @@ defmodule Amqpx.Test.AmqpxTest do
         end
       ) do
         publish_1_result = Amqpx.Gen.Producer.publish("topic1", "amqpx.test1", "some-message")
+
         publish_2_result = Amqpx.Gen.Producer.publish_by(:producer2, "topic2", "amqpx.test2", "some-message-2")
 
         assert publish_1_result == :ok
@@ -187,6 +200,7 @@ defmodule Amqpx.Test.AmqpxTest do
       handle_message_rejection: fn _, _ -> :ok end
     ) do
       :ok = Amqpx.Gen.Producer.publish("topic-no-requeue", "amqpx.test-no-requeue", "some-message", redeliver: false)
+
       assert_receive {:handled_message, 1}
       refute_receive {:handled_message, 2}
     end
@@ -346,6 +360,66 @@ defmodule Amqpx.Test.AmqpxTest do
         assert :ok = ProducerWithRetry.send_payload_with_publish_confirm_delivery_timeout(payload)
         assert_called_exactly(Amqpx.Confirm.wait_for_confirms(:_, :_), 2)
         assert_called_exactly(Amqpx.Basic.publish(:_, :_, :_, :_, :_), 2)
+      end
+    end
+
+    test "should retry publish in case of confirm delivery timeout and on publish error" do
+      payload = %{test: 1}
+
+      with_mocks([
+        {
+          Amqpx.Basic,
+          [],
+          [
+            publish: fn _channel, _exchange, _routing_key, _payload, _options ->
+              case Process.get(:times_mock_publish_confirm_delivery_timeout_and_on_publish_error_called) do
+                nil ->
+                  Process.put(
+                    :times_mock_publish_confirm_delivery_timeout_and_on_publish_error_called,
+                    :first_publish_fail
+                  )
+
+                  {:error, :fail}
+
+                :first_publish_fail ->
+                  Process.put(
+                    :times_mock_publish_confirm_delivery_timeout_and_on_publish_error_called,
+                    :first_confirm_fail
+                  )
+
+                  :ok
+
+                :publish_and_confirm_ok ->
+                  :ok
+              end
+            end
+          ]
+        },
+        {
+          Amqpx.Confirm,
+          [],
+          [
+            wait_for_confirms: fn _channel, _timeout ->
+              case Process.get(:times_mock_publish_confirm_delivery_timeout_and_on_publish_error_called) do
+                :first_confirm_fail ->
+                  Process.put(
+                    :times_mock_publish_confirm_delivery_timeout_and_on_publish_error_called,
+                    :publish_and_confirm_ok
+                  )
+
+                  :timeout
+
+                :publish_and_confirm_ok ->
+                  true
+              end
+            end
+          ]
+        }
+      ]) do
+        assert :ok = ProducerWithRetry.send_payload_with_publish_confirm_delivery_timeout_and_on_publish_error(payload)
+
+        assert_called_exactly(Amqpx.Basic.publish(:_, :_, :_, :_, :_), 3)
+        assert_called_exactly(Amqpx.Confirm.wait_for_confirms(:_, :_), 2)
       end
     end
   end
