@@ -235,3 +235,26 @@ config :amqpx, :producer_with_retry_on_confirm_delivery_timeout_and_on_publish_e
     ]
   ]
 }
+
+config :amqpx, :producer_with_exponential_backoff, %{
+  name: :producer_with_exponential_backoff,
+  publish_timeout: 5_000,
+  publisher_confirms: true,
+  exchanges: [
+    %{
+      name: "test_exchange_with_retry",
+      type: :topic,
+      opts: [durable: true]
+    }
+  ],
+  publish_retry_options: [
+    max_retries: 5,
+    retry_policy: [
+      :on_publish_error
+    ],
+    backoff: [
+      base_ms: 10,
+      max_ms: 10_000
+    ]
+  ]
+}

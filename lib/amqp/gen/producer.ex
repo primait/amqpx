@@ -4,7 +4,7 @@ defmodule Amqpx.Gen.Producer do
   """
   require Logger
   use GenServer
-  alias Amqpx.{Basic, Channel, Confirm, Helper}
+  alias Amqpx.{Basic, Channel, Confirm, Helper, Backoff.Exponential}
 
   @type state() :: %__MODULE__{}
 
@@ -176,6 +176,7 @@ defmodule Amqpx.Gen.Producer do
             exchange,
             routing_key,
             payload,
+            1,
             publish_options,
             Keyword.merge([persistent: true], options)
           )
@@ -209,28 +210,21 @@ defmodule Amqpx.Gen.Producer do
          exchange,
          routing_key,
          payload,
-         %{
-           max_retries: 1
-         } = publish_options,
-         options
-       ),
-       do: do_publish(channel, exchange, routing_key, payload, publish_options, options)
-
-  defp do_retry_publish(
-         channel,
-         exchange,
-         routing_key,
-         payload,
+         attempt,
          %{max_retries: max_retries, retry_policy: retry_policy} = publish_options,
          options
-       ) do
+       )
+       when attempt < max_retries do
     retry_publish = fn ->
+      Exponential.backoff(attempt, publish_options)
+
       do_retry_publish(
         channel,
         exchange,
         routing_key,
         payload,
-        %{publish_options | max_retries: max_retries - 1},
+        attempt + 1,
+        publish_options,
         options
       )
     end
@@ -255,6 +249,17 @@ defmodule Amqpx.Gen.Producer do
         end
     end
   end
+
+  defp do_retry_publish(
+         channel,
+         exchange,
+         routing_key,
+         payload,
+         _attempt,
+         publish_options,
+         options
+       ),
+       do: do_publish(channel, exchange, routing_key, payload, publish_options, options)
 
   defp do_publish(
          channel,

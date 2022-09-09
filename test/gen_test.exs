@@ -74,6 +74,18 @@ defmodule Amqpx.Test.AmqpxTest do
          ]}
     })
 
+    start_supervised!(%{
+      id: :producer_with_exponential_backoff,
+      start:
+        {Amqpx.Gen.Producer, :start_link,
+         [
+           Application.fetch_env!(
+             :amqpx,
+             :producer_with_exponential_backoff
+           )
+         ]}
+    })
+
     Application.fetch_env!(:amqpx, :consumers)
     |> Enum.with_index()
     |> Enum.each(fn {opts, id} ->
@@ -501,6 +513,48 @@ defmodule Amqpx.Test.AmqpxTest do
                    ]
                  ]
                })
+    end
+  end
+
+  describe "exponential backoff validation" do
+    test "should be invoked the configured number of times" do
+      payload = %{test: 1}
+
+      with_mocks([
+        {
+          Amqpx.Basic,
+          [],
+          [
+            publish: fn _channel, _exchange, _routing_key, _payload, _options ->
+              {:error, :fail}
+            end
+          ]
+        },
+        {
+          Amqpx.Backoff.Exponential,
+          [],
+          [
+            backoff: fn
+              1,
+              %{
+                base_backoff_in_ms: 10,
+                max_backoff_in_ms: 100
+              } ->
+                :ok
+
+              2,
+              %{
+                base_backoff_in_ms: 10,
+                max_backoff_in_ms: 100
+              } ->
+                :ok
+            end
+          ]
+        }
+      ]) do
+        assert :error = ProducerWithRetry.send_payload_with_exponential_backoff(payload)
+        assert_called_exactly(Amqpx.Backoff.Exponential.backoff(:_, :_), 2)
+      end
     end
   end
 end
