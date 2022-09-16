@@ -121,6 +121,18 @@ Default parameters:
 - publish_timeout: 1_000
 - backoff: 5_000 (connection retry)
 - exchanges: []
+- publish_retry_options: [
+    max_retries: 0,
+    retry_policy: [
+      # :on_publish_rejected,
+      # :on_confirm_timeout,
+      # :on_publish_error,
+    ],
+    backoff: [
+      base_ms: 10,
+      max_ms: 10_000
+    ]
+  ]
 
 You can also declare exchanges from the producer module, simply specify them in the configuration. There is an example below.
 

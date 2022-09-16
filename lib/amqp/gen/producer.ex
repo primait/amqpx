@@ -15,6 +15,8 @@ defmodule Amqpx.Gen.Producer do
     on_confirm_timeout: false
   }
 
+  @default_backoff [base_ms: 10, max_ms: 5_000]
+
   defstruct [
     :channel,
     :publisher_confirms,
@@ -150,7 +152,7 @@ defmodule Amqpx.Gen.Producer do
       ) do
     retry_policy = Keyword.get(publish_retry_options, :retry_policy, %{})
     max_retries = Keyword.get(publish_retry_options, :max_retries, @default_max_retries)
-    backoff = Keyword.get(publish_retry_options, :backoff, [])
+    backoff = Keyword.get(publish_retry_options, :backoff, @default_backoff)
 
     publish_options = %{
       publisher_confirms: publisher_confirms,
@@ -222,7 +224,7 @@ defmodule Amqpx.Gen.Producer do
        )
        when attempt < max_retries do
     retry_publish = fn ->
-      Jittered.backoff(attempt, Keyword.get(backoff, :base_ms, 1), Keyword.get(backoff, :max_ms, 100))
+      Jittered.backoff(attempt, Keyword.get(backoff, :base_ms), Keyword.get(backoff, :max_ms))
 
       do_retry_publish(
         channel,
