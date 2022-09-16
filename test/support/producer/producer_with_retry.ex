@@ -46,9 +46,9 @@ defmodule Amqpx.Test.Support.ProducerWithRetry do
     )
   end
 
-  def send_payload_with_exponential_backoff(payload) do
+  def send_payload_with_jittered_backoff(payload) do
     Producer.publish_by(
-      :producer_with_exponential_backoff,
+      :producer_with_jittered_backoff,
       "test_exchange_with_retry",
       "amqpx.test1",
       Jason.encode!(payload)

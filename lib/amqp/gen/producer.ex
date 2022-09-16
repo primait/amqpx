@@ -4,7 +4,7 @@ defmodule Amqpx.Gen.Producer do
   """
   require Logger
   use GenServer
-  alias Amqpx.{Backoff.Exponential, Basic, Channel, Confirm, Helper}
+  alias Amqpx.{Backoff.Jittered, Basic, Channel, Confirm, Helper}
 
   @type state() :: %__MODULE__{}
 
@@ -222,7 +222,7 @@ defmodule Amqpx.Gen.Producer do
        )
        when attempt < max_retries do
     retry_publish = fn ->
-      Exponential.backoff(attempt, Keyword.get(backoff, :base_ms, 1), Keyword.get(backoff, :max_ms, 100))
+      Jittered.backoff(attempt, Keyword.get(backoff, :base_ms, 1), Keyword.get(backoff, :max_ms, 100))
 
       do_retry_publish(
         channel,

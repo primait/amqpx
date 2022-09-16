@@ -75,13 +75,13 @@ defmodule Amqpx.Test.AmqpxTest do
     })
 
     start_supervised!(%{
-      id: :producer_with_exponential_backoff,
+      id: :producer_with_jittered_backoff,
       start:
         {Amqpx.Gen.Producer, :start_link,
          [
            Application.fetch_env!(
              :amqpx,
-             :producer_with_exponential_backoff
+             :producer_with_jittered_backoff
            )
          ]}
     })
@@ -516,7 +516,7 @@ defmodule Amqpx.Test.AmqpxTest do
     end
   end
 
-  describe "exponential backoff validation" do
+  describe "jittered backoff validation" do
     test "should be invoked the configured number of times" do
       payload = %{test: 1}
 
@@ -531,7 +531,7 @@ defmodule Amqpx.Test.AmqpxTest do
           ]
         },
         {
-          Amqpx.Backoff.Exponential,
+          Amqpx.Backoff.Jittered,
           [],
           [
             backoff: fn
@@ -544,8 +544,8 @@ defmodule Amqpx.Test.AmqpxTest do
           ]
         }
       ]) do
-        assert :error = ProducerWithRetry.send_payload_with_exponential_backoff(payload)
-        assert_called_exactly(Amqpx.Backoff.Exponential.backoff(:_, :_, :_), 2)
+        assert :error = ProducerWithRetry.send_payload_with_jittered_backoff(payload)
+        assert_called_exactly(Amqpx.Backoff.Jittered.backoff(:_, :_, :_), 2)
       end
     end
   end

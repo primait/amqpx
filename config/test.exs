@@ -236,8 +236,8 @@ config :amqpx, :producer_with_retry_on_confirm_delivery_timeout_and_on_publish_e
   ]
 }
 
-config :amqpx, :producer_with_exponential_backoff, %{
-  name: :producer_with_exponential_backoff,
+config :amqpx, :producer_with_jittered_backoff, %{
+  name: :producer_with_jittered_backoff,
   publish_timeout: 5_000,
   publisher_confirms: true,
   exchanges: [
