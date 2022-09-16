@@ -535,25 +535,17 @@ defmodule Amqpx.Test.AmqpxTest do
           [],
           [
             backoff: fn
-              1,
-              %{
-                base_backoff_in_ms: 10,
-                max_backoff_in_ms: 100
-              } ->
+              1, 10, 10_000 ->
                 :ok
 
-              2,
-              %{
-                base_backoff_in_ms: 10,
-                max_backoff_in_ms: 100
-              } ->
+              2, 10, 10_000 ->
                 :ok
             end
           ]
         }
       ]) do
         assert :error = ProducerWithRetry.send_payload_with_exponential_backoff(payload)
-        assert_called_exactly(Amqpx.Backoff.Exponential.backoff(:_, :_), 2)
+        assert_called_exactly(Amqpx.Backoff.Exponential.backoff(:_, :_, :_), 2)
       end
     end
   end

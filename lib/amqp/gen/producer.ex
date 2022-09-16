@@ -4,7 +4,7 @@ defmodule Amqpx.Gen.Producer do
   """
   require Logger
   use GenServer
-  alias Amqpx.{Basic, Channel, Confirm, Helper, Backoff.Exponential}
+  alias Amqpx.{Backoff.Exponential, Basic, Channel, Confirm, Helper}
 
   @type state() :: %__MODULE__{}
 
@@ -150,12 +150,14 @@ defmodule Amqpx.Gen.Producer do
       ) do
     retry_policy = Keyword.get(publish_retry_options, :retry_policy, %{})
     max_retries = Keyword.get(publish_retry_options, :max_retries, @default_max_retries)
+    backoff = Keyword.get(publish_retry_options, :backoff, [])
 
     publish_options = %{
       publisher_confirms: publisher_confirms,
       publish_timeout: publish_timeout,
       max_retries: max_retries,
-      retry_policy: retry_policy
+      retry_policy: retry_policy,
+      backoff: backoff
     }
 
     result =
@@ -211,12 +213,16 @@ defmodule Amqpx.Gen.Producer do
          routing_key,
          payload,
          attempt,
-         %{max_retries: max_retries, retry_policy: retry_policy} = publish_options,
+         %{
+           max_retries: max_retries,
+           retry_policy: retry_policy,
+           backoff: backoff
+         } = publish_options,
          options
        )
        when attempt < max_retries do
     retry_publish = fn ->
-      Exponential.backoff(attempt, publish_options)
+      Exponential.backoff(attempt, Keyword.get(backoff, :base_ms, 1), Keyword.get(backoff, :max_ms, 100))
 
       do_retry_publish(
         channel,

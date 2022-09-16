@@ -1,9 +1,15 @@
 defmodule Amqpx.Backoff.Exponential do
   @moduledoc """
+  Implements an exponential backoff strategy
   """
 
-  def backoff(_, _) do
-    nil
+  @spec backoff(
+          attempts :: number(),
+          base_backoff_ms :: number(),
+          max_backoff_ms :: number()
+        ) :: :ok
+  def backoff(_, _, _) do
+    :ok
   end
 
   #  defp backoff(attempt, %{

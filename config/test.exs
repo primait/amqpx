@@ -248,7 +248,7 @@ config :amqpx, :producer_with_exponential_backoff, %{
     }
   ],
   publish_retry_options: [
-    max_retries: 5,
+    max_retries: 3,
     retry_policy: [
       :on_publish_error
     ],
