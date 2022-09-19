@@ -188,7 +188,7 @@ defmodule Amqpx.Gen.Producer do
       :ok ->
         :ok
 
-      {:retry, next_attempt, backoff_time} ->
+      {:retry, next_attempt, backoff_time, _} ->
         :timer.sleep(backoff_time)
         do_publish_by(producer_name, exchange_name, routing_key, payload, options, next_attempt)
 
@@ -203,7 +203,7 @@ defmodule Amqpx.Gen.Producer do
       {:confirm, true} ->
         {:reply, :ok, state}
 
-      {:retry, _, _} = retry ->
+      {:retry, _, _, _} = retry ->
         {:reply, retry, state}
 
       {:error, reason} ->
@@ -243,13 +243,13 @@ defmodule Amqpx.Gen.Producer do
 
         case {error, retry_policy} do
           {{:confirm, :timeout}, %{on_confirm_timeout: true}} ->
-            {:retry, attempt + 1, backoff_time}
+            {:retry, attempt + 1, backoff_time, error}
 
           {{:confirm, false}, %{on_publish_rejected: true}} ->
-            {:retry, attempt + 1, backoff_time}
+            {:retry, attempt + 1, backoff_time, error}
 
           {{:error, _}, %{on_publish_error: true}} ->
-            {:retry, attempt + 1, backoff_time}
+            {:retry, attempt + 1, backoff_time, error}
 
           _ ->
             error
