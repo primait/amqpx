@@ -65,7 +65,7 @@ defmodule Amqpx.Gen.Producer do
         ) ::
           :ok | :error
   def publish_by(producer_name, exchange_name, routing_key, payload, options \\ []) do
-    _publish_by(producer_name, exchange_name, routing_key, payload, options, 1)
+    do_publish_by(producer_name, exchange_name, routing_key, payload, options, 1)
   end
 
   # Callbacks
@@ -183,14 +183,14 @@ defmodule Amqpx.Gen.Producer do
   end
 
   # Private functions
-  def _publish_by(producer_name, exchange_name, routing_key, payload, options, attempt) do
+  def do_publish_by(producer_name, exchange_name, routing_key, payload, options, attempt) do
     case GenServer.call(producer_name, {:publish, {exchange_name, routing_key, payload, options, attempt}}) do
       :ok ->
         :ok
 
       {:retry, next_attempt, backoff_time} ->
         :timer.sleep(backoff_time)
-        _publish_by(producer_name, exchange_name, routing_key, payload, options, next_attempt)
+        do_publish_by(producer_name, exchange_name, routing_key, payload, options, next_attempt)
 
       reason ->
         Logger.error("Error during publish: #{inspect(reason)}")
