@@ -535,11 +535,8 @@ defmodule Amqpx.Test.AmqpxTest do
           [],
           [
             backoff: fn
-              1, 10, 10_000 ->
-                :ok
-
-              2, 10, 10_000 ->
-                :ok
+              _, _, _ ->
+                10
             end
           ]
         }
