@@ -549,14 +549,4 @@ defmodule Amqpx.Test.AmqpxTest do
       end
     end
   end
-
-  describe "get retry policy timeout" do
-    test "should return zero if retry policy is not enabled" do
-      assert 0 == GenServer.call(Amqpx.Gen.Producer, :get_retry_policy_timeout)
-    end
-
-    test "should return worst total retry timeout if retry policy is enabled" do
-      assert 30_000 == GenServer.call(:producer_with_jittered_backoff, :get_retry_policy_timeout)
-    end
-  end
 end

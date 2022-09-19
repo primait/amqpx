@@ -65,9 +65,7 @@ defmodule Amqpx.Gen.Producer do
         ) ::
           :ok | :error
   def publish_by(producer_name, exchange_name, routing_key, payload, options \\ []) do
-    call_timeout = max(GenServer.call(producer_name, :get_retry_policy_timeout), 5_000)
-
-    case GenServer.call(producer_name, {:publish, {exchange_name, routing_key, payload, options}}, call_timeout) do
+    case GenServer.call(producer_name, {:publish, {exchange_name, routing_key, payload, options}}) do
       :ok ->
         :ok
 
@@ -140,16 +138,6 @@ defmodule Amqpx.Gen.Producer do
 
   def handle_call(_msg, _from, %{channel: nil}) do
     {:reply, {:error, :not_connected}}
-  end
-
-  def handle_call(
-        :get_retry_policy_timeout,
-        _from,
-        %{publish_retry_options: publish_retry_options} = state
-      ) do
-    max_retries = Keyword.get(publish_retry_options, :max_retries, @default_max_retries)
-    max_backoff = publish_retry_options |> Keyword.get(:backoff, @default_backoff) |> Keyword.get(:max_ms)
-    {:reply, max_backoff * max_retries, state}
   end
 
   def handle_call(
