@@ -84,9 +84,14 @@ defmodule Amqpx.Helper do
     setup_queue(channel, queue)
   end
 
-  def setup_dead_lettering(channel, %{queue: dlq, exchange: ""}) do
+  def setup_dead_lettering(channel, %{queue: dlq, exchange: "", routing_key: dql}) do
+    # DLX will work through [default exchange](https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchange-default)
+    # since `x-dead-letter-routing-key` matches the queue name
     Queue.declare(channel, dlq, durable: true)
-    # Warn that this DLX won't work unless configured otherwise, or just raise?
+  end
+  
+  def setup_dead_lettering(channel, %{exchange: ""} = conf) do
+    raise "Incorrect dead letter exchange configuration #{inspect(conf)}"
   end
 
   def setup_dead_lettering(channel, %{queue: dlq, exchange: exchange, routing_key: routing_key}) do
