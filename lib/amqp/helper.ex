@@ -51,7 +51,8 @@ defmodule Amqpx.Helper do
         channel,
         %{
           queue: qname,
-          opts: opts
+          opts: opts,
+          exchanges: exchanges
         } = queue
       ) do
     case Enum.find(opts[:arguments], &match?({"x-dead-letter-exchange", _, _}, &1)) do
@@ -65,7 +66,11 @@ defmodule Amqpx.Helper do
             })
 
           nil ->
-            setup_dead_lettering(channel, %{queue: "#{qname}_errored", exchange: dle})
+            setup_dead_lettering(channel, %{
+              queue: "#{qname}_errored",
+              exchange: dle,
+              original_routing_keys: Enum.map(exchanges, &(&1.routing_keys))
+            })
         end
 
       nil ->
@@ -81,6 +86,7 @@ defmodule Amqpx.Helper do
 
   def setup_dead_lettering(channel, %{queue: dlq, exchange: ""}) do
     Queue.declare(channel, dlq, durable: true)
+    # Warn that this DLX won't work unless configured otherwise, or just raise?
   end
 
   def setup_dead_lettering(channel, %{queue: dlq, exchange: exchange, routing_key: routing_key}) do
@@ -89,10 +95,16 @@ defmodule Amqpx.Helper do
     Queue.bind(channel, dlq, exchange, routing_key: routing_key)
   end
 
-  def setup_dead_lettering(channel, %{queue: dlq, exchange: exchange}) do
+  def setup_dead_lettering(channel, %{queue: dlq, exchange: exchange, original_routing_keys: original_routing_keys}) do
     Exchange.declare(channel, exchange, :topic, durable: true)
     Queue.declare(channel, dlq, durable: true)
-    Queue.bind(channel, dlq, exchange, routing_key: "#")
+    
+    original_routing_keys
+      |> List.flatten()
+      |> Enum.uniq()
+      |> Enum.each(fn rk ->
+        :ok = Queue.bind(channel, queue, name, routing_key: rk)
+      end)
   end
 
   def setup_queue(channel, %{
