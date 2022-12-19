@@ -69,7 +69,7 @@ defmodule Amqpx.Helper do
             setup_dead_lettering(channel, %{
               queue: "#{qname}_errored",
               exchange: dle,
-              original_routing_keys: Enum.map(exchanges, &(&1.routing_keys))
+              original_routing_keys: Enum.map(exchanges, & &1.routing_keys)
             })
         end
 
@@ -89,7 +89,7 @@ defmodule Amqpx.Helper do
     # since `x-dead-letter-routing-key` matches the queue name
     Queue.declare(channel, dlq, durable: true)
   end
-  
+
   def setup_dead_lettering(_channel, %{exchange: ""} = conf) do
     raise "Incorrect dead letter exchange configuration #{inspect(conf)}"
   end
@@ -103,13 +103,13 @@ defmodule Amqpx.Helper do
   def setup_dead_lettering(channel, %{queue: dlq, exchange: exchange, original_routing_keys: original_routing_keys}) do
     Exchange.declare(channel, exchange, :topic, durable: true)
     Queue.declare(channel, dlq, durable: true)
-    
+
     original_routing_keys
-      |> List.flatten()
-      |> Enum.uniq()
-      |> Enum.each(fn rk ->
-        :ok = Queue.bind(channel, dlq, exchange, routing_key: rk)
-      end)
+    |> List.flatten()
+    |> Enum.uniq()
+    |> Enum.each(fn rk ->
+      :ok = Queue.bind(channel, dlq, exchange, routing_key: rk)
+    end)
   end
 
   def setup_queue(channel, %{
