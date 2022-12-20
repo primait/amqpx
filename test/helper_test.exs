@@ -41,6 +41,34 @@ defmodule HelperTest do
     assert {:ok, %{message_count: 0}} = Queue.delete(meta[:chan], queue_name_errored)
   end
 
+  test "configuration without an exchange and with routing key should not raise an error", meta do
+    queue_name = rand_name()
+    routing_key_name = rand_name()
+    exchange_name = rand_name()
+
+    queue_name_errored = "#{queue_name}_errored"
+
+    assert :ok =
+             Helper.declare(meta[:chan], %{
+               exchanges: [
+                 %{name: exchange_name, opts: [durable: true], routing_keys: [routing_key_name], type: :topic}
+               ],
+               opts: [
+                 durable: true,
+                 arguments: [
+                   {"x-dead-letter-exchange", :longstr, ""},
+                   {"x-dead-letter-routing-key", :longstr, routing_key_name}
+                 ]
+               ],
+               queue: queue_name
+             })
+
+    assert :ok = Queue.unbind(meta[:chan], queue_name, exchange_name)
+    assert :ok = Exchange.delete(meta[:chan], exchange_name)
+    assert {:ok, %{message_count: 0}} = Queue.delete(meta[:chan], queue_name)
+    assert {:ok, %{message_count: 0}} = Queue.delete(meta[:chan], queue_name_errored)
+  end
+
   test "bad configuration with dead letter exchange and routing key should rise an error ", meta do
     queue_name = rand_name()
     routing_key_name = rand_name()
