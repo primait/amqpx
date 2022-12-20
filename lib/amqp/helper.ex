@@ -55,9 +55,9 @@ defmodule Amqpx.Helper do
           exchanges: exchanges
         } = queue
       ) do
-    case Enum.find(opts[:arguments], &match?({"x-dead-letter-exchange", _, _}, &1)) do
+    case Enum.find(opts[:arguments], &match?({"x-dead-letter-exchange", :longstr, _}, &1)) do
       {_, _, dle} ->
-        case Enum.find(opts[:arguments], &match?({"x-dead-letter-routing-key", _, _}, &1)) do
+        case Enum.find(opts[:arguments], &match?({"x-dead-letter-routing-key", :longstr, _}, &1)) do
           {_, _, dlrk} ->
             setup_dead_lettering(channel, %{
               queue: "#{qname}_errored",
@@ -88,7 +88,7 @@ defmodule Amqpx.Helper do
     raise "Incorrect dead letter exchange configuration #{inspect(conf)}"
   end
 
-  def setup_dead_lettering(channel, %{queue: dlq, exchange: "", routing_key: dlq}) do
+  def setup_dead_lettering(channel, %{exchange: "", routing_key: dlq}) do
     # DLX will work through [default exchange](https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchange-default)
     # since `x-dead-letter-routing-key` matches the queue name
     Queue.declare(channel, dlq, durable: true)
