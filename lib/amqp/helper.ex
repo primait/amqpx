@@ -94,7 +94,7 @@ defmodule Amqpx.Helper do
     raise "Incorrect dead letter exchange configuration #{inspect(conf)}"
   end
 
-  def setup_dead_lettering(_channel, %{queue: q, exchange: "", routing_key: dlq} = conf) do
+  def setup_dead_lettering(_channel, %{queue: q, exchange: "", routing_key: dlq}) do
     raise "Configuring \"x-dead-letter-exchange\" with empty string, \"x-dead-letter-routing-key\" should be #{q}_errored instead of #{dlq}"
   end
 
