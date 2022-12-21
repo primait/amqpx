@@ -57,7 +57,7 @@ defmodule HelperTest do
                  durable: true,
                  arguments: [
                    {"x-dead-letter-exchange", :longstr, ""},
-                   {"x-dead-letter-routing-key", :longstr, routing_key_name}
+                   {"x-dead-letter-routing-key", :longstr, queue_name_errored}
                  ]
                ],
                queue: queue_name
