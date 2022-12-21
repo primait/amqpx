@@ -41,7 +41,8 @@ defmodule HelperTest do
     assert {:ok, %{message_count: 0}} = Queue.delete(meta[:chan], queue_name_errored)
   end
 
-  test "configuration without an exchange and with routing key set with correct dead letter queue should not raise an error", meta do
+  test "configuration without an exchange and with routing key set with correct dead letter queue should not raise an error",
+       meta do
     queue_name = rand_name()
     routing_key_name = rand_name()
     exchange_name = rand_name()
