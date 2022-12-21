@@ -78,7 +78,7 @@ defmodule HelperTest do
     queue_name_errored = "BadDeadLetterQueue"
 
     assert_raise RuntimeError,
-                 "Configuring x-dead-letter-exchange with empty string, x-dead-letter-routing-key should be #{queue_name}_errored instead of #{queue_name_errored}",
+                 "Configuring x-dead-letter-exchange with empty string, x-dead-letter-routing-key should be '#{queue_name}_errored' instead of '#{queue_name_errored}'",
                  fn ->
                    Helper.declare(meta[:chan], %{
                      exchanges: [
@@ -102,7 +102,7 @@ defmodule HelperTest do
     exchange_name = rand_name()
 
     assert_raise RuntimeError,
-                 "Incorrect dead letter exchange configuration %{exchange: \"\", queue: \"#{queue_name}_errored\", routing_key: \"\"}",
+                 "Configuring x-dead-letter-exchange with empty string, x-dead-letter-routing-key should be '#{queue_name}_errored' instead of ''",
                  fn ->
                    Helper.declare(meta[:chan], %{
                      exchanges: [
