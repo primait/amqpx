@@ -96,7 +96,7 @@ defmodule HelperTest do
                  end
   end
 
-  test "bad configuration with dead letter exchange and routing key should raise an error", meta do
+  test "bad configuration with empty dead letter exchange and routing key should raise an error", meta do
     queue_name = rand_name()
     routing_key_name = rand_name()
     exchange_name = rand_name()
