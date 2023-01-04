@@ -55,23 +55,23 @@ defmodule Amqpx.Helper do
           exchanges: exchanges
         } = queue
       ) do
+    dead_lettering_config = %{queue: "#{qname}_errored"}
+
     case Enum.find(opts[:arguments], &match?({"x-dead-letter-exchange", :longstr, _}, &1)) do
       {_, _, dle} ->
-        case Enum.find(opts[:arguments], &match?({"x-dead-letter-routing-key", :longstr, _}, &1)) do
-          {_, _, dlrk} ->
-            setup_dead_lettering(channel, %{
-              queue: "#{qname}_errored",
-              exchange: dle,
-              routing_key: dlrk
-            })
+        Map.put(dead_lettering_config, :exchange, dle)
 
-          nil ->
-            setup_dead_lettering(channel, %{
-              queue: "#{qname}_errored",
-              exchange: dle,
-              original_routing_keys: Enum.map(exchanges, & &1.routing_keys)
-            })
-        end
+        {dlr_config_key, dlr_config_value} =
+          case Enum.find(opts[:arguments], &match?({"x-dead-letter-routing-key", :longstr, _}, &1)) do
+            {_, _, dlrk} ->
+              {:routing_key, dlrk}
+
+            nil ->
+              original_routing_keys = Enum.map(exchanges, & &1.routing_keys)
+              {:original_routing_keys, original_routing_keys}
+          end
+
+        setup_dead_lettering(channel, %{dlr_config_key => dlr_config_value, queue: "#{qname}_errored", exchange: dle})
 
       nil ->
         nil
