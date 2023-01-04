@@ -55,12 +55,8 @@ defmodule Amqpx.Helper do
           exchanges: exchanges
         } = queue
       ) do
-    dead_lettering_config = %{queue: "#{qname}_errored"}
-
     case Enum.find(opts[:arguments], &match?({"x-dead-letter-exchange", :longstr, _}, &1)) do
       {_, _, dle} ->
-        Map.put(dead_lettering_config, :exchange, dle)
-
         {dlr_config_key, dlr_config_value} =
           case Enum.find(opts[:arguments], &match?({"x-dead-letter-routing-key", :longstr, _}, &1)) do
             {_, _, dlrk} ->
