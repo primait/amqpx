@@ -13,6 +13,8 @@ defmodule Amqpx.Test.AmqpxTest do
 
   import Mock
 
+  @moduletag capture_log: true
+
   setup_all do
     Amqpx.Gen.ConnectionManager.start_link(%{
       connection_params: Application.fetch_env!(:amqpx, :amqp_connection)
