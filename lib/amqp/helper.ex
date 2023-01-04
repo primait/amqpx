@@ -67,7 +67,11 @@ defmodule Amqpx.Helper do
               {:original_routing_keys, original_routing_keys}
           end
 
-        setup_dead_lettering(channel, %{dlr_config_key => dlr_config_value, queue: "#{qname}_errored", exchange: dle})
+        setup_dead_lettering(channel, %{
+          dlr_config_key => dlr_config_value,
+          queue: "#{qname}_errored",
+          exchange: dle
+        })
 
       nil ->
         nil
