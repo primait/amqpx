@@ -201,7 +201,7 @@ defmodule Amqpx.Gen.Consumer do
     %{state | handler_state: handler_state}
   rescue
     e in _ ->
-      Logger.error(inspect(e))
+      Logger.error(Exception.format(:error, e, __STACKTRACE__))
 
       Task.start(fn ->
         :timer.sleep(backoff)
