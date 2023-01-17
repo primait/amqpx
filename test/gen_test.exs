@@ -9,6 +9,7 @@ defmodule Amqpx.Test.AmqpxTest do
   alias Amqpx.Test.Support.Producer1
   alias Amqpx.Test.Support.Producer2
   alias Amqpx.Test.Support.Producer3
+  alias Amqpx.Test.Support.ProducerWithRetry
   alias Amqpx.Test.Support.ProducerConnectionTwo
 
   import Mock
@@ -16,19 +17,85 @@ defmodule Amqpx.Test.AmqpxTest do
   @moduletag capture_log: true
 
   setup_all do
-    Amqpx.Gen.ConnectionManager.start_link(%{
-      connection_params: Application.fetch_env!(:amqpx, :amqp_connection)
+    start_supervised!(%{
+      id: :amqp_connection,
+      start:
+        {Amqpx.Gen.ConnectionManager, :start_link,
+         [%{connection_params: Application.fetch_env!(:amqpx, :amqp_connection)}]}
     })
 
-    Amqpx.Gen.ConnectionManager.start_link(%{
-      connection_params: Application.fetch_env!(:amqpx, :amqp_connection_two)
+    start_supervised!(%{
+      id: :amqp_connection_two,
+      start:
+        {Amqpx.Gen.ConnectionManager, :start_link,
+         [%{connection_params: Application.fetch_env!(:amqpx, :amqp_connection_two)}]}
     })
 
-    {:ok, _} = Amqpx.Gen.Producer.start_link(Application.fetch_env!(:amqpx, :producer))
-    {:ok, _} = Amqpx.Gen.Producer.start_link(Application.fetch_env!(:amqpx, :producer2))
-    {:ok, _} = Amqpx.Gen.Producer.start_link(Application.fetch_env!(:amqpx, :producer_connection_two))
+    start_supervised!(%{
+      id: :producer,
+      start: {Amqpx.Gen.Producer, :start_link, [Application.fetch_env!(:amqpx, :producer)]}
+    })
 
-    Enum.each(Application.fetch_env!(:amqpx, :consumers), &Amqpx.Gen.Consumer.start_link(&1))
+    start_supervised!(%{
+      id: :producer2,
+      start: {Amqpx.Gen.Producer, :start_link, [Application.fetch_env!(:amqpx, :producer2)]}
+    })
+
+    start_supervised!(%{
+      id: :producer_connection_two,
+      start: {Amqpx.Gen.Producer, :start_link, [Application.fetch_env!(:amqpx, :producer_connection_two)]}
+    })
+
+    start_supervised!(%{
+      id: :producer_with_retry_on_publish_error,
+      start: {Amqpx.Gen.Producer, :start_link, [Application.fetch_env!(:amqpx, :producer_with_retry_on_publish_error)]}
+    })
+
+    start_supervised!(%{
+      id: :producer_with_retry_on_publish_rejected,
+      start:
+        {Amqpx.Gen.Producer, :start_link, [Application.fetch_env!(:amqpx, :producer_with_retry_on_publish_rejected)]}
+    })
+
+    start_supervised!(%{
+      id: :producer_with_retry_on_confirm_delivery_timeout,
+      start:
+        {Amqpx.Gen.Producer, :start_link,
+         [Application.fetch_env!(:amqpx, :producer_with_retry_on_confirm_delivery_timeout)]}
+    })
+
+    start_supervised!(%{
+      id: :producer_with_retry_on_confirm_delivery_timeout_and_on_publish_error,
+      start:
+        {Amqpx.Gen.Producer, :start_link,
+         [
+           Application.fetch_env!(
+             :amqpx,
+             :producer_with_retry_on_confirm_delivery_timeout_and_on_publish_error
+           )
+         ]}
+    })
+
+    start_supervised!(%{
+      id: :producer_with_jittered_backoff,
+      start:
+        {Amqpx.Gen.Producer, :start_link,
+         [
+           Application.fetch_env!(
+             :amqpx,
+             :producer_with_jittered_backoff
+           )
+         ]}
+    })
+
+    Application.fetch_env!(:amqpx, :consumers)
+    |> Enum.with_index()
+    |> Enum.each(fn {opts, id} ->
+      start_supervised!(%{
+        id: :"consumer_#{id}",
+        start: {Amqpx.Gen.Consumer, :start_link, [opts]}
+      })
+    end)
 
     :timer.sleep(1_000)
     :ok
@@ -85,6 +152,7 @@ defmodule Amqpx.Test.AmqpxTest do
         end
       ) do
         publish_1_result = Amqpx.Gen.Producer.publish("topic1", "amqpx.test1", "some-message")
+
         publish_2_result = Amqpx.Gen.Producer.publish_by(:producer2, "topic2", "amqpx.test2", "some-message-2")
 
         assert publish_1_result == :ok
@@ -146,6 +214,7 @@ defmodule Amqpx.Test.AmqpxTest do
       handle_message_rejection: fn _, _ -> :ok end
     ) do
       :ok = Amqpx.Gen.Producer.publish("topic-no-requeue", "amqpx.test-no-requeue", "some-message", redeliver: false)
+
       assert_receive {:handled_message, 1}
       refute_receive {:handled_message, 2}
     end
@@ -202,6 +271,281 @@ defmodule Amqpx.Test.AmqpxTest do
       :timer.sleep(50)
       assert_called(Consumer1.handle_message(Jason.encode!(payload), :_, :_))
       assert_called(ConsumerConnectionTwo.handle_message(Jason.encode!(payload), :_, :_))
+    end
+  end
+
+  describe "when publish retry configurations are enabled" do
+    test "should retry publish in case of publish error" do
+      payload = %{test: 1}
+
+      with_mock(Amqpx.Basic,
+        publish: fn _channel, _exchange, _routing_key, _payload, _options ->
+          case Process.get(:times_mock_publish_called) do
+            nil ->
+              Process.put(:times_mock_publish_called, 1)
+              {:error, :fail}
+
+            1 ->
+              :ok
+          end
+        end
+      ) do
+        assert :ok = ProducerWithRetry.send_payload_with_publish_error(payload)
+        assert_called_exactly(Amqpx.Basic.publish(:_, :_, :_, :_, :_), 2)
+      end
+    end
+
+    test "should not retry publish in case of publish error if on_publish_error retry_policy is not set" do
+      payload = %{test: 1}
+
+      with_mock(Amqpx.Basic,
+        publish: fn _channel, _exchange, _routing_key, _payload, _options ->
+          {:error, :blocked}
+        end
+      ) do
+        assert :error = ProducerWithRetry.send_payload_without_publish_error(payload)
+        assert_called_exactly(Amqpx.Basic.publish(:_, :_, :_, :_, :_), 1)
+      end
+    end
+
+    test "should retry publish in case of publish rejection" do
+      payload = %{test: 1}
+
+      with_mock(Amqpx.Confirm,
+        wait_for_confirms: fn _channel, _timeout ->
+          case Process.get(:times_mock_publish_rejected_called) do
+            nil ->
+              Process.put(:times_mock_publish_rejected_called, 1)
+              false
+
+            1 ->
+              true
+          end
+        end
+      ) do
+        assert :ok = ProducerWithRetry.send_payload_with_publish_rejected(payload)
+        assert_called_exactly(Amqpx.Confirm.wait_for_confirms(:_, :_), 2)
+      end
+    end
+
+    test "should not retry publish in case of publish rejection if on_publish_rejected retry_policy is not set" do
+      payload = %{test: 1}
+
+      with_mock(Amqpx.Confirm,
+        wait_for_confirms: fn _channel, _timeout ->
+          false
+        end
+      ) do
+        assert :error = ProducerWithRetry.send_payload_without_publish_rejected(payload)
+        assert_called_exactly(Amqpx.Confirm.wait_for_confirms(:_, :_), 1)
+      end
+    end
+
+    test "should retry publish in case of confirm delivery timeout" do
+      payload = %{test: 1}
+
+      with_mocks([
+        {
+          Amqpx.Basic,
+          [],
+          [
+            publish: fn _channel, _exchange, _routing_key, _payload, _options ->
+              :ok
+            end
+          ]
+        },
+        {
+          Amqpx.Confirm,
+          [],
+          [
+            wait_for_confirms: fn _channel, _timeout ->
+              case Process.get(:times_mock_publish_confirm_delivery_timeout_called) do
+                nil ->
+                  Process.put(:times_mock_publish_confirm_delivery_timeout_called, 1)
+                  :timeout
+
+                1 ->
+                  true
+              end
+            end
+          ]
+        }
+      ]) do
+        assert :ok = ProducerWithRetry.send_payload_with_publish_confirm_delivery_timeout(payload)
+        assert_called_exactly(Amqpx.Confirm.wait_for_confirms(:_, :_), 2)
+        assert_called_exactly(Amqpx.Basic.publish(:_, :_, :_, :_, :_), 2)
+      end
+    end
+
+    test "should retry publish in case of confirm delivery timeout and on publish error" do
+      payload = %{test: 1}
+
+      with_mocks([
+        {
+          Amqpx.Basic,
+          [],
+          [
+            publish: fn _channel, _exchange, _routing_key, _payload, _options ->
+              case Process.get(:times_mock_publish_confirm_delivery_timeout_and_on_publish_error_called) do
+                nil ->
+                  Process.put(
+                    :times_mock_publish_confirm_delivery_timeout_and_on_publish_error_called,
+                    :first_publish_fail
+                  )
+
+                  {:error, :fail}
+
+                :first_publish_fail ->
+                  Process.put(
+                    :times_mock_publish_confirm_delivery_timeout_and_on_publish_error_called,
+                    :first_confirm_fail
+                  )
+
+                  :ok
+
+                :publish_and_confirm_ok ->
+                  :ok
+              end
+            end
+          ]
+        },
+        {
+          Amqpx.Confirm,
+          [],
+          [
+            wait_for_confirms: fn _channel, _timeout ->
+              case Process.get(:times_mock_publish_confirm_delivery_timeout_and_on_publish_error_called) do
+                :first_confirm_fail ->
+                  Process.put(
+                    :times_mock_publish_confirm_delivery_timeout_and_on_publish_error_called,
+                    :publish_and_confirm_ok
+                  )
+
+                  :timeout
+
+                :publish_and_confirm_ok ->
+                  true
+              end
+            end
+          ]
+        }
+      ]) do
+        assert :ok = ProducerWithRetry.send_payload_with_publish_confirm_delivery_timeout_and_on_publish_error(payload)
+
+        assert_called_exactly(Amqpx.Basic.publish(:_, :_, :_, :_, :_), 3)
+        assert_called_exactly(Amqpx.Confirm.wait_for_confirms(:_, :_), 2)
+      end
+    end
+  end
+
+  test "test retry configurations" do
+    payload = %{test: 1}
+
+    with_mock(Amqpx.Basic,
+      publish: fn _channel, _exchange, _routing_key, _payload, _options ->
+        case Process.get(:times_mock_publish_called_2) do
+          nil ->
+            Process.put(:times_mock_publish_called_2, 2)
+            {:error, :fail}
+
+          5 ->
+            :ok
+
+          n ->
+            Process.put(:times_mock_publish_called_2, n + 1)
+            {:error, :fail}
+        end
+      end
+    ) do
+      assert :ok = ProducerWithRetry.send_payload_with_publish_error(payload)
+      assert_called_exactly(Amqpx.Basic.publish(:_, :_, :_, :_, :_), 5)
+    end
+  end
+
+  describe "when publish retry configurations are not enabled" do
+    test "should not retry publish in case of error" do
+      payload = %{test: 1}
+
+      with_mock(Amqpx.Basic,
+        publish: fn _channel, _exchange, _routing_key, _payload, _options ->
+          {:error, :fail}
+        end
+      ) do
+        assert :error = Producer1.send_payload(payload)
+        assert_called_exactly(Amqpx.Basic.publish(:_, :_, :_, :_, :_), 1)
+      end
+    end
+  end
+
+  describe "configuration validation" do
+    test "if retry_policy is configured, max_retries must be > 0" do
+      assert {:error, {:invalid_configuration, "when retry policy is configured, max_retries must be > 0"}} =
+               Amqpx.Gen.Producer.start_link(%{
+                 name: :producer_misconfigured_retry_policy_max_retries,
+                 exchanges: [
+                   %{
+                     name: "test_exchange_misconfigured_retry_policy_max_retries",
+                     type: :topic,
+                     opts: [durable: true]
+                   }
+                 ],
+                 publish_retry_options: [
+                   max_retries: 0,
+                   retry_policy: [
+                     :on_publish_error
+                   ]
+                 ]
+               })
+    end
+
+    test "if retry_policy is configured, max_retries must be set" do
+      assert {:error, {:invalid_configuration, "when retry policy is configured, max_retries must be > 0"}} =
+               Amqpx.Gen.Producer.start_link(%{
+                 name: :producer_misconfigured_retry_policy_max_retries,
+                 exchanges: [
+                   %{
+                     name: "test_exchange_misconfigured_retry_policy_max_retries",
+                     type: :topic,
+                     opts: [durable: true]
+                   }
+                 ],
+                 publish_retry_options: [
+                   retry_policy: [
+                     :on_publish_error
+                   ]
+                 ]
+               })
+    end
+  end
+
+  describe "jittered backoff validation" do
+    test "should be invoked the configured number of times" do
+      payload = %{test: 1}
+
+      with_mocks([
+        {
+          Amqpx.Basic,
+          [],
+          [
+            publish: fn _channel, _exchange, _routing_key, _payload, _options ->
+              {:error, :fail}
+            end
+          ]
+        },
+        {
+          Amqpx.Backoff.Jittered,
+          [],
+          [
+            backoff: fn
+              _, _, _ ->
+                10
+            end
+          ]
+        }
+      ]) do
+        assert :error = ProducerWithRetry.send_payload_with_jittered_backoff(payload)
+        assert_called_exactly(Amqpx.Backoff.Jittered.backoff(:_, :_, :_), 2)
+      end
     end
   end
 end

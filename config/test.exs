@@ -158,3 +158,103 @@ config :amqpx, :producer_connection_two, %{
     }
   ]
 }
+
+config :amqpx, :producer_with_retry_on_publish_error, %{
+  name: :producer_with_retry_on_publish_error,
+  publish_timeout: 5_000,
+  publisher_confirms: true,
+  exchanges: [
+    %{
+      name: "test_exchange_with_retry",
+      type: :topic,
+      opts: [durable: true]
+    }
+  ],
+  publish_retry_options: [
+    max_retries: 5,
+    retry_policy: [
+      :on_publish_error
+    ]
+  ]
+}
+
+config :amqpx, :producer_with_retry_on_publish_rejected, %{
+  name: :producer_with_retry_on_publish_rejected,
+  publish_timeout: 5_000,
+  publisher_confirms: true,
+  exchanges: [
+    %{
+      name: "test_exchange_with_retry",
+      type: :topic,
+      opts: [durable: true]
+    }
+  ],
+  publish_retry_options: [
+    max_retries: 5,
+    retry_policy: [
+      :on_publish_rejected
+    ]
+  ]
+}
+
+config :amqpx, :producer_with_retry_on_confirm_delivery_timeout, %{
+  name: :producer_with_retry_on_confirm_delivery_timeout,
+  publish_timeout: 5_000,
+  publisher_confirms: true,
+  exchanges: [
+    %{
+      name: "test_exchange_with_retry",
+      type: :topic,
+      opts: [durable: true]
+    }
+  ],
+  publish_retry_options: [
+    max_retries: 5,
+    retry_policy: [
+      :on_confirm_timeout
+    ]
+  ]
+}
+
+config :amqpx, :producer_with_retry_on_confirm_delivery_timeout_and_on_publish_error, %{
+  name: :producer_with_retry_on_confirm_delivery_timeout_and_on_publish_error,
+  publish_timeout: 5_000,
+  publisher_confirms: true,
+  exchanges: [
+    %{
+      name: "test_exchange_with_retry",
+      type: :topic,
+      opts: [durable: true]
+    }
+  ],
+  publish_retry_options: [
+    max_retries: 5,
+    retry_policy: [
+      :on_confirm_timeout,
+      :on_publish_error
+    ]
+  ]
+}
+
+config :amqpx, :producer_with_jittered_backoff, %{
+  name: :producer_with_jittered_backoff,
+  publish_timeout: 5_000,
+  publisher_confirms: true,
+  exchanges: [
+    %{
+      name: "test_exchange_with_retry",
+      type: :topic,
+      opts: [durable: true]
+    }
+  ],
+  publish_retry_options: [
+    max_retries: 3,
+    retry_policy: [
+      :on_publish_error
+    ],
+    backoff: [
+      base_ms: 10,
+      max_ms: 10_000
+    ]
+  ]
+}

@@ -121,6 +121,14 @@ Default parameters:
 - publish_timeout: 1_000
 - backoff: 5_000 (connection retry)
 - exchanges: []
+- publish_retry_options: [
+    max_retries: 0,
+    retry_policy: [],
+    backoff: [
+      base_ms: 10,
+      max_ms: 10_000
+    ]
+  ]
 
 You can also declare exchanges from the producer module, simply specify them in the configuration. There is an example below.
 
@@ -133,6 +141,16 @@ config :myapp, :producer, %{
   ]
 }
 ```
+#### Publish retry options
+
+- `max_retries`: number of times a `publish` will be retried. A `publish` can be executed at most  (`max_retries` + 1) times 
+- `retry_policy`: collection of error conditions which will cause the `publish` to be retried. Can be a combination of the following atoms:
+  - `:on_publish_rejected` (when the broker itself rejects)
+  - `:on_confirm_timeout` (when the confirm from the broker times out)
+  - `:on_publish_error` (when there is an error returned at AMQP protocol level)
+- `backoff`: sleep time between `publish` retries. Calculated as `random_between(0, min(cap, base * 2 ** attempt))`
+  - `base_ms`: time in millisecond that is used as `base` term in the formula above
+  - `max_ms`: time in millisecond that is used as `cap` term in the formula above
 
 ## Usage example
 

@@ -4,9 +4,18 @@ defmodule Amqpx.Gen.Producer do
   """
   require Logger
   use GenServer
-  alias Amqpx.{Basic, Channel, Confirm, Helper}
+  alias Amqpx.{Backoff.Jittered, Basic, Channel, Confirm, Helper}
 
   @type state() :: %__MODULE__{}
+
+  @default_max_retries 0
+  @default_retry_policy %{
+    on_publish_rejected: false,
+    on_publish_error: false,
+    on_confirm_timeout: false
+  }
+
+  @default_backoff [base_ms: 10, max_ms: 5_000]
 
   defstruct [
     :channel,
@@ -14,7 +23,8 @@ defmodule Amqpx.Gen.Producer do
     publish_timeout: 1_000,
     backoff: 5_000,
     exchanges: [],
-    connection_name: Amqpx.Gen.ConnectionManager
+    connection_name: Amqpx.Gen.ConnectionManager,
+    publish_retry_options: []
   ]
 
   # Public API
@@ -25,9 +35,14 @@ defmodule Amqpx.Gen.Producer do
   end
 
   def init(opts) do
-    state = struct(__MODULE__, opts)
-    Process.send(self(), :setup, [])
-    {:ok, state}
+    case validate_configuration(opts) do
+      {:ok, state} ->
+        Process.send(self(), :setup, [])
+        {:ok, state}
+
+      {:error, reason} ->
+        {:stop, reason}
+    end
   end
 
   @spec publish(
@@ -50,14 +65,7 @@ defmodule Amqpx.Gen.Producer do
         ) ::
           :ok | :error
   def publish_by(producer_name, exchange_name, routing_key, payload, options \\ []) do
-    case GenServer.call(producer_name, {:publish, {exchange_name, routing_key, payload, options}}) do
-      :ok ->
-        :ok
-
-      reason ->
-        Logger.error("Error during publish: #{inspect(reason)}")
-        :error
-    end
+    do_publish_by(producer_name, exchange_name, routing_key, payload, options, 1)
   end
 
   # Callbacks
@@ -126,26 +134,78 @@ defmodule Amqpx.Gen.Producer do
   end
 
   def handle_call(
-        {:publish, {exchange, routing_key, payload, options}},
+        {:publish, {exchange, routing_key, payload, options, retry_attempt}},
         _from,
         %{
           channel: channel,
           publisher_confirms: publisher_confirms,
-          publish_timeout: publish_timeout
+          publish_timeout: publish_timeout,
+          publish_retry_options: publish_retry_options
         } = state
       ) do
-    with :ok <-
-           Basic.publish(
-             channel,
-             exchange,
-             routing_key,
-             payload,
-             Keyword.merge([persistent: true], options)
-           ),
-         {:confirm, true} <-
-           {:confirm, confirm_delivery(publisher_confirms, publish_timeout, channel)} do
-      {:reply, :ok, state}
-    else
+    retry_policy = Keyword.get(publish_retry_options, :retry_policy, %{})
+    max_retries = Keyword.get(publish_retry_options, :max_retries, @default_max_retries)
+    backoff = Keyword.get(publish_retry_options, :backoff, @default_backoff)
+
+    publish_options = %{
+      publisher_confirms: publisher_confirms,
+      publish_timeout: publish_timeout,
+      max_retries: max_retries,
+      retry_policy: retry_policy,
+      backoff: backoff
+    }
+
+    result =
+      case retry_policy do
+        [] ->
+          do_publish(
+            channel,
+            exchange,
+            routing_key,
+            payload,
+            publish_options,
+            Keyword.merge([persistent: true], options)
+          )
+
+        _any ->
+          do_retry_publish(
+            channel,
+            exchange,
+            routing_key,
+            payload,
+            retry_attempt,
+            publish_options,
+            Keyword.merge([persistent: true], options)
+          )
+      end
+
+    handle_publish_result(result, state)
+  end
+
+  # Private functions
+  def do_publish_by(producer_name, exchange_name, routing_key, payload, options, attempt) do
+    case GenServer.call(producer_name, {:publish, {exchange_name, routing_key, payload, options, attempt}}) do
+      :ok ->
+        :ok
+
+      {:retry, next_attempt, backoff_time, _} ->
+        :timer.sleep(backoff_time)
+        do_publish_by(producer_name, exchange_name, routing_key, payload, options, next_attempt)
+
+      reason ->
+        Logger.error("Error during publish: #{inspect(reason)}")
+        :error
+    end
+  end
+
+  defp handle_publish_result(result, state) do
+    case result do
+      {:confirm, true} ->
+        {:reply, :ok, state}
+
+      {:retry, _, _, _} = retry ->
+        {:reply, retry, state}
+
       {:error, reason} ->
         Logger.error("cannot publish message to broker: #{inspect(reason)}")
         {:stop, reason, {:error, reason}, state}
@@ -160,7 +220,76 @@ defmodule Amqpx.Gen.Producer do
     end
   end
 
-  # Private functions
+  defp do_retry_publish(
+         channel,
+         exchange,
+         routing_key,
+         payload,
+         attempt,
+         %{
+           max_retries: max_retries,
+           retry_policy: retry_policy,
+           backoff: backoff
+         } = publish_options,
+         options
+       )
+       when attempt < max_retries do
+    case do_publish(channel, exchange, routing_key, payload, publish_options, options) do
+      {:confirm, true} ->
+        {:confirm, true}
+
+      error ->
+        backoff_time = Jittered.backoff(attempt, Keyword.get(backoff, :base_ms), Keyword.get(backoff, :max_ms))
+
+        case {error, retry_policy} do
+          {{:confirm, :timeout}, %{on_confirm_timeout: true}} ->
+            {:retry, attempt + 1, backoff_time, error}
+
+          {{:confirm, false}, %{on_publish_rejected: true}} ->
+            {:retry, attempt + 1, backoff_time, error}
+
+          {{:error, _}, %{on_publish_error: true}} ->
+            {:retry, attempt + 1, backoff_time, error}
+
+          _ ->
+            error
+        end
+    end
+  end
+
+  defp do_retry_publish(
+         channel,
+         exchange,
+         routing_key,
+         payload,
+         _attempt,
+         publish_options,
+         options
+       ),
+       do: do_publish(channel, exchange, routing_key, payload, publish_options, options)
+
+  defp do_publish(
+         channel,
+         exchange,
+         routing_key,
+         payload,
+         %{
+           publisher_confirms: publisher_confirms,
+           publish_timeout: publish_timeout
+         },
+         options
+       ) do
+    with :ok <-
+           Basic.publish(
+             channel,
+             exchange,
+             routing_key,
+             payload,
+             options
+           ) do
+      {:confirm, confirm_delivery(publisher_confirms, publish_timeout, channel)}
+    end
+  end
 
   @spec confirm_delivery(boolean(), integer(), Channel.t()) :: boolean() | :timeout
   defp confirm_delivery(false, _, _), do: true
@@ -171,5 +300,41 @@ defmodule Amqpx.Gen.Producer do
 
   defp declare_exchanges(exchanges, channel) do
     Enum.each(exchanges, &Helper.setup_exchange(channel, &1))
+  end
+
+  # Configuration
+
+  # Validates configuration and returns the genserver's state if successful, or error
+  defp validate_configuration(%{} = opts) do
+    publish_retry_options = Map.get(opts, :publish_retry_options, [])
+
+    ok_or_validation_error = validate_retry_policy(publish_retry_options)
+
+    if ok_or_validation_error == :ok do
+      retry_policy_opts =
+        publish_retry_options
+        |> Keyword.get(:retry_policy, [])
+        |> Enum.reduce(@default_retry_policy, fn policy, acc -> Map.put(acc, policy, true) end)
+
+      configurations =
+        opts
+        |> Map.put(:publish_retry_options, publish_retry_options)
+        |> put_in([:publish_retry_options, :retry_policy], retry_policy_opts)
+
+      {:ok, struct(__MODULE__, configurations)}
+    else
+      ok_or_validation_error
+    end
+  end
+
+  defp validate_retry_policy(publish_retry_options) do
+    max_retries = Keyword.get(publish_retry_options, :max_retries, @default_max_retries)
+    retry_policy = Keyword.get(publish_retry_options, :retry_policy, [])
+
+    if not Enum.empty?(retry_policy) and max_retries == 0 do
+      {:error, {:invalid_configuration, "when retry policy is configured, max_retries must be > 0"}}
+    else
+      :ok
+    end
   end
 end
