@@ -548,4 +548,48 @@ defmodule Amqpx.Test.AmqpxTest do
       end
     end
   end
+
+  test "the consumer should stop gracefully" do
+    tmp_ex = %{name: "tmp_ex", type: :topic, routing_keys: ["amqpx.tmp_ex"], opts: [durable: true]}
+
+    consumer_config = %{
+      queue: "tmp_q",
+      exchanges: [tmp_ex],
+      opts: [durable: true]
+    }
+
+    assert {:ok, test_chan} =
+             Amqpx.Gen.ConnectionManager
+             |> GenServer.call(:get_connection)
+             |> Amqpx.Channel.open(self())
+
+    assert :ok = Amqpx.Helper.setup_exchange(test_chan, tmp_ex)
+    assert :ok = Amqpx.Helper.setup_queue(test_chan, consumer_config)
+
+    test = self()
+
+    with_mock(Consumer1,
+      handle_message: fn _, _, s -> {:ok, s} end,
+      setup: fn channel ->
+        send(test, {:channel, channel})
+        {:ok, %{}}
+      end
+    ) do
+      {:ok, consumer_pid} = Amqpx.Gen.Consumer.start_link(%{handler_module: Consumer1})
+      Process.unlink(consumer_pid)
+
+      assert_receive {:channel, %{pid: channel_pid}}
+
+      Process.monitor(consumer_pid)
+      Process.monitor(channel_pid)
+
+      Process.exit(consumer_pid, {:shutdown, :die_gracefully})
+
+      assert_receive {:DOWN, _, :process, pid_1, _}
+      assert_receive {:DOWN, _, :process, pid_2, _}
+
+      assert pid_1 in [consumer_pid, channel_pid]
+      assert pid_2 in [consumer_pid, channel_pid]
+    end
+  end
 end

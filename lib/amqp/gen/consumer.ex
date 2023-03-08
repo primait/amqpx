@@ -29,6 +29,8 @@ defmodule Amqpx.Gen.Consumer do
   end
 
   def init(opts) do
+    Process.flag(:trap_exit, true)
+
     state = struct(__MODULE__, opts)
     Process.send(self(), :setup, [])
     {:ok, state}
@@ -178,13 +180,27 @@ defmodule Amqpx.Gen.Consumer do
 
   def terminate(_, %__MODULE__{channel: nil}), do: nil
 
-  def terminate(_, %__MODULE__{channel: channel}) do
-    if Process.alive?(channel.pid) do
-      Channel.close(channel)
+  def terminate(reason, %__MODULE__{channel: channel}) do
+    case reason do
+      :normal -> close_channel(channel)
+      :shutdown -> close_channel(channel)
+      {:shutdown, _} -> close_channel(channel)
+      _ -> :ok
     end
   end
 
   # Private functions
+
+  defp close_channel(%{pid: pid} = channel) do
+    if Process.alive?(pid) do
+      Channel.close(channel)
+
+      receive do
+        {:DOWN, _, :process, ^pid, _reason} ->
+          :ok
+      end
+    end
+  end
 
   defp handle_message(
          message,
