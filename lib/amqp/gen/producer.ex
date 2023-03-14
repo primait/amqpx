@@ -31,10 +31,13 @@ defmodule Amqpx.Gen.Producer do
 
   # Public API
 
+  @spec start_link(opts :: map()) :: GenServer.server()
   def start_link(opts) do
-    gen_server_opts = opts
-    |> Keyword.take(@gen_server_opts)
-    |> Keyword.put_new(:name, __MODULE__)
+    gen_server_opts =
+      opts
+      |> Map.take(@gen_server_opts)
+      |> Map.to_list()
+      |> Keyword.put_new(:name, __MODULE__)
 
     GenServer.start_link(__MODULE__, opts, gen_server_opts)
   end

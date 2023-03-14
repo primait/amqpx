@@ -26,10 +26,11 @@ defmodule Amqpx.Gen.Consumer do
 
   @gen_server_opts [:name, :timeout, :debug, :spawn_opt, :hibernate_after]
 
+  @spec start_link(opts :: map()) :: GenServer.server()
   def start_link(opts) do
-    [opts, gen_server_opts] = Keyword.split(opts, @gen_server_opts)
+    {gen_server_opts, opts} = Map.split(opts, @gen_server_opts)
 
-    GenServer.start_link(__MODULE__, opts, gen_server_opts)
+    GenServer.start_link(__MODULE__, opts, Map.to_list(gen_server_opts))
   end
 
   def init(opts) do
