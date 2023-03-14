@@ -24,8 +24,12 @@ defmodule Amqpx.Gen.Consumer do
   @callback handle_message_rejection(message :: any(), error :: any()) :: :ok | {:error, any()}
   @optional_callbacks handle_message_rejection: 2
 
+  @gen_server_opts [:name, :timeout, :debug, :spawn_opt, :hibernate_after]
+
   def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts)
+    [opts, gen_server_opts] = Keyword.split(opts, @gen_server_opts)
+
+    GenServer.start_link(__MODULE__, opts, gen_server_opts)
   end
 
   def init(opts) do

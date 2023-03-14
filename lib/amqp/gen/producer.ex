@@ -17,6 +17,8 @@ defmodule Amqpx.Gen.Producer do
 
   @default_backoff [base_ms: 10, max_ms: 5_000]
 
+  @gen_server_opts [:name, :timeout, :debug, :spawn_opt, :hibernate_after]
+
   defstruct [
     :channel,
     :publisher_confirms,
@@ -30,8 +32,11 @@ defmodule Amqpx.Gen.Producer do
   # Public API
 
   def start_link(opts) do
-    name = Map.get(opts, :name, __MODULE__)
-    GenServer.start_link(__MODULE__, opts, name: name)
+    gen_server_opts = opts
+    |> Keyword.take(@gen_server_opts)
+    |> Keyword.put_new(:name, __MODULE__)
+
+    GenServer.start_link(__MODULE__, opts, gen_server_opts)
   end
 
   def init(opts) do
