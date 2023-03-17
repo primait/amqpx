@@ -17,6 +17,8 @@ defmodule Amqpx.Gen.Producer do
 
   @default_backoff [base_ms: 10, max_ms: 5_000]
 
+  @gen_server_opts [:name, :timeout, :debug, :spawn_opt, :hibernate_after]
+
   defstruct [
     :channel,
     :publisher_confirms,
@@ -29,12 +31,20 @@ defmodule Amqpx.Gen.Producer do
 
   # Public API
 
+  @spec start_link(opts :: map()) :: GenServer.server()
   def start_link(opts) do
-    name = Map.get(opts, :name, __MODULE__)
-    GenServer.start_link(__MODULE__, opts, name: name)
+    gen_server_opts =
+      opts
+      |> Map.take(@gen_server_opts)
+      |> Map.to_list()
+      |> Keyword.put_new(:name, __MODULE__)
+
+    GenServer.start_link(__MODULE__, opts, gen_server_opts)
   end
 
   def init(opts) do
+    Process.flag(:trap_exit, true)
+
     case validate_configuration(opts) do
       {:ok, state} ->
         Process.send(self(), :setup, [])
@@ -123,9 +133,12 @@ defmodule Amqpx.Gen.Producer do
 
   def terminate(_, %__MODULE__{channel: nil}), do: nil
 
-  def terminate(_, %__MODULE__{channel: channel}) do
-    if Process.alive?(channel.pid) do
-      Channel.close(channel)
+  def terminate(reason, %__MODULE__{channel: channel}) do
+    case reason do
+      :normal -> close_channel(channel)
+      :shutdown -> close_channel(channel)
+      {:shutdown, _} -> close_channel(channel)
+      _ -> :ok
     end
   end
 
@@ -183,6 +196,18 @@ defmodule Amqpx.Gen.Producer do
   end
 
   # Private functions
+
+  defp close_channel(%{pid: pid} = channel) do
+    if Process.alive?(pid) do
+      Channel.close(channel)
+
+      receive do
+        {:DOWN, _, :process, ^pid, _reason} ->
+          :ok
+      end
+    end
+  end
+
   def do_publish_by(producer_name, exchange_name, routing_key, payload, options, attempt) do
     case GenServer.call(producer_name, {:publish, {exchange_name, routing_key, payload, options, attempt}}) do
       :ok ->

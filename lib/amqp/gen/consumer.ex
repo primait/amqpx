@@ -24,11 +24,18 @@ defmodule Amqpx.Gen.Consumer do
   @callback handle_message_rejection(message :: any(), error :: any()) :: :ok | {:error, any()}
   @optional_callbacks handle_message_rejection: 2
 
+  @gen_server_opts [:name, :timeout, :debug, :spawn_opt, :hibernate_after]
+
+  @spec start_link(opts :: map()) :: GenServer.server()
   def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts)
+    {gen_server_opts, opts} = Map.split(opts, @gen_server_opts)
+
+    GenServer.start_link(__MODULE__, opts, Map.to_list(gen_server_opts))
   end
 
   def init(opts) do
+    Process.flag(:trap_exit, true)
+
     state = struct(__MODULE__, opts)
     Process.send(self(), :setup, [])
     {:ok, state}
@@ -178,13 +185,27 @@ defmodule Amqpx.Gen.Consumer do
 
   def terminate(_, %__MODULE__{channel: nil}), do: nil
 
-  def terminate(_, %__MODULE__{channel: channel}) do
-    if Process.alive?(channel.pid) do
-      Channel.close(channel)
+  def terminate(reason, %__MODULE__{channel: channel}) do
+    case reason do
+      :normal -> close_channel(channel)
+      :shutdown -> close_channel(channel)
+      {:shutdown, _} -> close_channel(channel)
+      _ -> :ok
     end
   end
 
   # Private functions
+
+  defp close_channel(%{pid: pid} = channel) do
+    if Process.alive?(pid) do
+      Channel.close(channel)
+
+      receive do
+        {:DOWN, _, :process, ^pid, _reason} ->
+          :ok
+      end
+    end
+  end
 
   defp handle_message(
          message,
