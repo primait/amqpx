@@ -178,6 +178,8 @@ defmodule Amqpx.Gen.Consumer do
     {:stop, :channel_exited, state}
   end
 
+  def handle_info({:EXIT, _, :normal}, state), do: {:noreply, state}
+
   def handle_info(message, state) do
     Logger.warn("Unknown message received #{inspect(message)}")
     {:noreply, state}
