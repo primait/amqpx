@@ -21,13 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- [[STAFF-31](https://prima-assicurazioni-spa.myjetbrains.com/youtrack/issue/STAFF-31)] Add proper shutdown handling to Amqpx generic producers and consumers ([#138](https://github.com/primait/amqpx/pull/138))
+- Add proper shutdown handling to Amqpx generic producers and consumers ([#138](https://github.com/primait/amqpx/pull/138))
 - Add retry mechanism for publish ([#121](https://github.com/primait/amqpx/pull/121))
 
 ### Changed
 
 - Print stacktrace when rescuing exceptions ([#119](https://github.com/primait/amqpx/pull/119))
-- [[PLATFORM-886](https://prima-assicurazioni-spa.myjetbrains.com/youtrack/issue/PLATFORM-886)]: Refactor declare function in helper module ([#131](https://github.com/primait/amqpx/pull/131))
+- Refactor declare function in helper module ([#131](https://github.com/primait/amqpx/pull/131))
 
 ---
 
