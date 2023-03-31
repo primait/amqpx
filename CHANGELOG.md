@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Avoid logging normal exits ([#140](https://github.com/primait/amqpx/pull/140))
+- ([#140](https://github.com/primait/amqpx/pull/140)) Avoid logging normal exits
 
 ---
 
@@ -21,13 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add proper shutdown handling to Amqpx generic producers and consumers ([#138](https://github.com/primait/amqpx/pull/138))
-- Add retry mechanism for publish ([#121](https://github.com/primait/amqpx/pull/121))
+- ([#138](https://github.com/primait/amqpx/pull/138)) Add proper shutdown handling to Amqpx generic producers and consumers
+- ([#121](https://github.com/primait/amqpx/pull/121)) Add retry mechanism for publish
 
 ### Changed
 
-- Print stacktrace when rescuing exceptions ([#119](https://github.com/primait/amqpx/pull/119))
-- Refactor declare function in helper module ([#131](https://github.com/primait/amqpx/pull/131))
+- ([#119](https://github.com/primait/amqpx/pull/119)) Print stacktrace when rescuing exceptions
+- ([#131](https://github.com/primait/amqpx/pull/131)) Refactor declare function in helper module
 
 ---
 
@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Default binding for DLX queues instead of wildcard ([#129](https://github.com/primait/amqpx/pull/))
+- ([#129](https://github.com/primait/amqpx/pull/)) Default binding for DLX queues instead of wildcard
 
 [Unreleased]: https://github.com/primait/amqpx/compare/6.0.2...HEAD
 [6.0.2]: https://github.com/primait/amqpx/compare/6.0.1...6.0.2
