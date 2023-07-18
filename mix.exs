@@ -6,7 +6,7 @@ defmodule Amqpx.MixProject do
       app: :amqpx,
       name: "amqpx",
       version: "6.0.2",
-      elixir: "~> 1.7",
+      elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :production,
       deps: deps(),

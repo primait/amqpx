@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - master
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  amqpx:
+    runs-on: [self-hosted, k8s-medium]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.version.otp }}
+          elixir-version: ${{ matrix.version.elixir }}
+      - name: Deps get
+        run: mix deps.get
+      - name: Test
+        run: mix test
+    strategy:
+      fail-fast: false
+      matrix:
+        versions:
+          - otp: 26
+            elixir: 1.15
+          - otp: 25
+            elixir: 1.15
+          - otp: 24
+            elixir: 1.15
+          - otp: 25
+            elixir: 1.14
+          - otp: 24
+            elixir: 1.14
+          - otp: 23
+            elixir: 1.14
+          - otp: 24
+            elixir: 1.13
+          - otp: 23
+            elixir: 1.13
+          - otp: 22
+            elixir: 1.13
+          - otp: 24
+            elixir: 1.12
+          - otp: 23
+            elixir: 1.12
+          - otp: 22
+            elixir: 1.12
+          - otp: 23
+            elixir: 1.11
+          - otp: 22
+            elixir: 1.11
+          - otp: 21
+            elixir: 1.11
+  alls-green:
+    if: always()
+    needs:
+      - amqpx 
+    runs-on: [self-hosted, k8s-small]
+    container:
+      image: public.ecr.aws/prima/python:3.9.10-3
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}
