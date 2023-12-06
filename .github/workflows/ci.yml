@@ -93,7 +93,7 @@ jobs:
       rabbit2:
         image: rabbitmq:3.11.26-management
         ports:
-          - 5673:5673
+          - 5673:5672
         env:
           RABBITMQ_DEFAULT_VHOST: rabbit
           RABBITMQ_DEFAULT_PASS: rabbit
