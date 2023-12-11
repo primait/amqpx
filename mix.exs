@@ -31,6 +31,7 @@ defmodule Amqpx.MixProject do
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(:dev), do: ["lib", "test/support"]
+  defp elixirc_paths(:gha), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
   defp aliases do
@@ -53,9 +54,9 @@ defmodule Amqpx.MixProject do
       {:amqp_client, "~> 3.9"},
       {:rabbit_common, "~> 3.9"},
       {:elixir_uuid, "~> 1.2"},
-      {:credo, "~> 1.5", only: [:dev, :test]},
-      {:mock, "~> 0.3.7", only: :test},
-      {:dialyxir, "~> 1.1", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.5", only: [:dev, :test, :gha]},
+      {:mock, "~> 0.3.7", only: [:test, :gha]},
+      {:dialyxir, "~> 1.1", only: [:dev, :test, :gha], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
