@@ -260,3 +260,8 @@ config :amqpx, :producer_with_jittered_backoff, %{
     ]
   ]
 }
+
+config :amqpx, rabbit_manager_url: %{
+  rabbit: "rabbit:15672",
+  rabbit_two: "rabbit_two:15673"
+}
