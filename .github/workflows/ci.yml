@@ -26,8 +26,8 @@ jobs:
       - name: Add hosts entries
         run: |
           echo "
-          127.0.0.1 rabbit1
-          127.0.0.1 rabbit2
+          127.0.0.1 rabbit
+          127.0.0.1 rabbit_two
           " | sudo tee /etc/hosts
 
 
