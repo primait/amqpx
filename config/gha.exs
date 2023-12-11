@@ -1,62 +1,62 @@
 use Mix.Config
 
 config :logger, :console,
-       format: "[$level] $message $metadata\n",
-       metadata: [:error, :error_message]
+  format: "[$level] $message $metadata\n",
+  metadata: [:error, :error_message]
 
 config :logger, level: :error
 
 config :amqpx,
-       amqp_connection: [
-         username: "amqpx",
-         password: "amqpx",
-         host: "rabbit",
-         virtual_host: "/",
-         port: 5672,
-         heartbeat: 30,
-         connection_timeout: 10_000,
-         obfuscate_password: false
-       ]
+  amqp_connection: [
+    username: "amqpx",
+    password: "amqpx",
+    host: "rabbit",
+    virtual_host: "/",
+    port: 5672,
+    heartbeat: 30,
+    connection_timeout: 10_000,
+    obfuscate_password: false
+  ]
 
 config :amqpx,
-       amqp_connection_two: [
-         name: ConnectionTwo,
-         username: "amqpx",
-         password: "amqpx",
-         host: "rabbit_two",
-         virtual_host: "/two",
-         port: 5673,
-         heartbeat: 30,
-         connection_timeout: 10_000,
-         obfuscate_password: false
-       ]
+  amqp_connection_two: [
+    name: ConnectionTwo,
+    username: "amqpx",
+    password: "amqpx",
+    host: "rabbit_two",
+    virtual_host: "/two",
+    port: 5673,
+    heartbeat: 30,
+    connection_timeout: 10_000,
+    obfuscate_password: false
+  ]
 
 config :amqpx,
-       consumers: [
-         %{
-           handler_module: Amqpx.Test.Support.Consumer1
-         },
-         %{
-           handler_module: Amqpx.Test.Support.Consumer2
-         },
-         %{
-           handler_module: Amqpx.Test.Support.Consumer3,
-           backoff: 10_000
-         },
-         %{
-           handler_module: Amqpx.Test.Support.HandleRejectionConsumer,
-           backoff: 10
-         },
-         %{
-           handler_module: Amqpx.Test.Support.NoRequeueConsumer,
-           backoff: 10,
-           requeue_on_reject: false
-         },
-         %{
-           handler_module: Amqpx.Test.Support.ConsumerConnectionTwo,
-           connection_name: ConnectionTwo
-         }
-       ]
+  consumers: [
+    %{
+      handler_module: Amqpx.Test.Support.Consumer1
+    },
+    %{
+      handler_module: Amqpx.Test.Support.Consumer2
+    },
+    %{
+      handler_module: Amqpx.Test.Support.Consumer3,
+      backoff: 10_000
+    },
+    %{
+      handler_module: Amqpx.Test.Support.HandleRejectionConsumer,
+      backoff: 10
+    },
+    %{
+      handler_module: Amqpx.Test.Support.NoRequeueConsumer,
+      backoff: 10,
+      requeue_on_reject: false
+    },
+    %{
+      handler_module: Amqpx.Test.Support.ConsumerConnectionTwo,
+      connection_name: ConnectionTwo
+    }
+  ]
 
 config :amqpx, Amqpx.Test.Support.Consumer1, %{
   queue: "test1",
