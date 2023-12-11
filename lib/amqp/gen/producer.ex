@@ -39,8 +39,6 @@ defmodule Amqpx.Gen.Producer do
       |> Map.to_list()
       |> Keyword.put_new(:name, __MODULE__)
 
-    IO.inspect(gen_server_opts)
-
     GenServer.start_link(__MODULE__, opts, gen_server_opts)
   end
 
