@@ -12,7 +12,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     env:
-      MIX_ENV: test
+      MIX_ENV: gha
     steps:
       - uses: erlef/setup-beam@v1
         with:
@@ -89,16 +89,16 @@ jobs:
           RABBITMQ_DEFAULT_VHOST: rabbit
           RABBITMQ_DEFAULT_PASS: rabbit
           RABBITMQ_DEFAULT_USER: rabbit
-        options: --name rabbit1
+        options: --name rabbit
       rabbit2:
         image: rabbitmq:3.11.26-management
         ports:
-          - 5673:5672
+          - 5672:5673
         env:
           RABBITMQ_DEFAULT_VHOST: rabbit
           RABBITMQ_DEFAULT_PASS: rabbit
           RABBITMQ_DEFAULT_USER: rabbit
-        options: --name rabbit2
+        options: --name rabbit_two
 
   alls-green:
     if: always()
