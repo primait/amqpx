@@ -87,9 +87,9 @@ jobs:
           - 5672:5672
           - 15672:15672
         env:
-          RABBITMQ_DEFAULT_VHOST: rabbit
-          RABBITMQ_DEFAULT_PASS: rabbit
-          RABBITMQ_DEFAULT_USER: rabbit
+          RABBITMQ_DEFAULT_VHOST: /
+          RABBITMQ_DEFAULT_PASS: amqpx
+          RABBITMQ_DEFAULT_USER: amqpx
         options: --name rabbit
       rabbit2:
         image: rabbitmq:3.11.26-management
@@ -97,9 +97,9 @@ jobs:
           - 5673:5672
           - 15673:15672
         env:
-          RABBITMQ_DEFAULT_VHOST: rabbit
-          RABBITMQ_DEFAULT_PASS: rabbit
-          RABBITMQ_DEFAULT_USER: rabbit
+          RABBITMQ_DEFAULT_VHOST: /
+          RABBITMQ_DEFAULT_PASS: amqpx
+          RABBITMQ_DEFAULT_USER: amqpx
         options: --name rabbit_two
 
   alls-green:
