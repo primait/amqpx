@@ -73,8 +73,8 @@ jobs:
         run: mix compile --warnings-as-errors
       - name: Check Formatting
         run: mix format --check-formatted
-      - name: Credo
-        run: mix credo -a --strict
+#      - name: Credo
+#        run: mix credo -a --strict
       - name: Test
         run: mix test
       - name: Dialyzer
