@@ -12,6 +12,7 @@ config :amqpx,
     password: "amqpx",
     host: "rabbit",
     virtual_host: "/",
+    port: 5672,
     heartbeat: 30,
     connection_timeout: 10_000,
     obfuscate_password: false
@@ -24,6 +25,7 @@ config :amqpx,
     password: "amqpx",
     host: "rabbit_two",
     virtual_host: "/two",
+    port: 5673,
     heartbeat: 30,
     connection_timeout: 10_000,
     obfuscate_password: false
@@ -262,5 +264,5 @@ config :amqpx, :producer_with_jittered_backoff, %{
 config :amqpx,
   rabbit_manager_url: %{
     rabbit: "rabbit:15672",
-    rabbit_two: "rabbit_two:15672"
+    rabbit_two: "rabbit_two:15673"
   }
