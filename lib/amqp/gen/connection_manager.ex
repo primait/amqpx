@@ -19,6 +19,7 @@ defmodule Amqpx.Gen.ConnectionManager do
   end
 
   def init(opts) do
+    Process.flag(:trap_exit, true)
     state = struct(__MODULE__, opts)
     Process.send(self(), :setup, [])
     {:ok, state}
