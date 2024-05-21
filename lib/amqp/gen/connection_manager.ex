@@ -55,8 +55,6 @@ defmodule Amqpx.Gen.ConnectionManager do
     {:stop, :connection_exited, state}
   end
 
-  def handle_info({:EXIT, _pid, :normal}, state), do: {:stop, :EXIT, state}
-
   def handle_info(message, state) do
     Logger.warn("Unknown message received #{inspect(message)}")
     {:noreply, state}
