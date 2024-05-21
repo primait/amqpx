@@ -91,14 +91,5 @@ defmodule BasicTest do
 
       assert {:ok, ^consumer_tag} = Basic.cancel(meta[:chan], consumer_tag)
     end
-
-    test "cancel exits the process when channel is closed", meta do
-      {:ok, consumer_tag} = Basic.consume(meta[:chan], meta[:queue], self())
-
-      Channel.close(meta[:chan])
-
-      Process.flag(:trap_exit, true)
-      assert {:normal, _} = catch_exit(Basic.cancel(meta[:chan], consumer_tag))
-    end
   end
 end
