@@ -70,7 +70,9 @@ defmodule Amqpx.Gen.ConnectionManager do
 
   @spec connect(map) :: {:ok, Connection.t()} | {:error, any}
   defp connect(connection_params) do
-    with {:ok, connection} <- Connection.open(connection_params) do
+    name = connection_params |> Keyword.get(:name, Amqpx.Gen.ConnectionManager) |> to_string()
+
+    with {:ok, connection} <- Connection.open(connection_params, name) do
       Process.monitor(connection.pid)
 
       {:ok, connection}
