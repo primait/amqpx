@@ -64,7 +64,10 @@ defmodule Amqpx.Gen.ConnectionManager do
 
   def terminate(_, %__MODULE__{connection: connection}) do
     if Process.alive?(connection.pid) do
-      Connection.close(connection)
+      case Connection.close(connection) do
+        :ok -> :ok
+        error -> Logger.warning("Error while closing connection", error: inspect(error))
+      end
     end
   end
 
