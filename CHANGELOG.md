@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [6.0.3] - 2024-05-28
+
+### Fixed
+
+- ([#190](https://github.com/primait/amqpx/pull/191)) Suppress noisy error logs at GenServer shutdown.
+- ([#191](https://github.com/primait/amqpx/pull/190)) GenServer now trap exit and gracefully shutdown instead of force 
+  the process to exit.
+
+
+---
+
 ## [6.0.2] - 2023-03-24
 
 ### Changed
@@ -37,7 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - ([#129](https://github.com/primait/amqpx/pull/)) Default binding for DLX queues instead of wildcard
 
-[Unreleased]: https://github.com/primait/amqpx/compare/6.0.2...HEAD
+[Unreleased]: https://github.com/primait/amqpx/compare/6.0.3...HEAD
+[6.0.3]: https://github.com/primait/amqpx/compare/6.0.2...6.0.3
 [6.0.2]: https://github.com/primait/amqpx/compare/6.0.1...6.0.2
 [6.0.1]: https://github.com/primait/amqpx/compare/6.0.0...6.0.1
 [6.0.0]: https://github.com/primait/amqpx/releases/tag/6.0.0
