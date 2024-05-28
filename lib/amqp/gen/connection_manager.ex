@@ -19,6 +19,7 @@ defmodule Amqpx.Gen.ConnectionManager do
   end
 
   def init(opts) do
+    Process.flag(:trap_exit, true)
     state = struct(__MODULE__, opts)
     Process.send(self(), :setup, [])
     {:ok, state}
@@ -54,8 +55,6 @@ defmodule Amqpx.Gen.ConnectionManager do
     {:stop, :connection_exited, state}
   end
 
-  def handle_info({:EXIT, _pid, :normal}, state), do: {:stop, :EXIT, state}
-
   def handle_info(message, state) do
     Logger.warn("Unknown message received #{inspect(message)}")
     {:noreply, state}
@@ -65,13 +64,18 @@ defmodule Amqpx.Gen.ConnectionManager do
 
   def terminate(_, %__MODULE__{connection: connection}) do
     if Process.alive?(connection.pid) do
-      Process.exit(connection.pid, :kill)
+      case Connection.close(connection) do
+        :ok -> :ok
+        error -> Logger.warning("Error while closing connection", error: inspect(error))
+      end
     end
   end
 
   @spec connect(map) :: {:ok, Connection.t()} | {:error, any}
   defp connect(connection_params) do
-    with {:ok, connection} <- Connection.open(connection_params) do
+    name = connection_params |> Keyword.get(:name, Amqpx.Gen.ConnectionManager) |> to_string()
+
+    with {:ok, connection} <- Connection.open(connection_params, name) do
       Process.monitor(connection.pid)
 
       {:ok, connection}
