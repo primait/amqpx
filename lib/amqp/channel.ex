@@ -21,7 +21,7 @@ defmodule Amqpx.Channel do
 
   @spec open(Connection.t(), pid()) :: {:ok, Channel.t()} | {:error, any}
   def open(%Connection{pid: pid} = conn, consumer_pid) do
-    case :amqp_connection.open_channel(pid, {:amqp_direct_consumer, [consumer_pid]}) do
+    case :amqp_connection.open_channel(pid, {Amqpx.DirectConsumer, [consumer_pid]}) do
       {:ok, chan_pid} -> {:ok, %Channel{conn: conn, pid: chan_pid}}
       error -> error
     end
