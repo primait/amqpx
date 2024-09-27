@@ -59,13 +59,28 @@ defmodule ConnectionTest do
     uri = "amqp://guest:amqpx@rabbit:5672"
     {:ok, amqp_params} = uri |> String.to_charlist() |> :amqp_uri.parse()
 
-    record =
-      Connection.merge_options_to_amqp_params(amqp_params, username: "amqpx", obfuscate_password: @obfuscate_password)
-
+    params = [username: "amqpx", obfuscate_password: @obfuscate_password]
+    default = amqp_params_network(amqp_params)
+    record = Connection.merge_options(params, default)
     params = amqp_params_network(record)
 
     assert params[:username] == "amqpx"
     assert params[:password] == "amqpx"
     assert params[:host] == 'rabbit'
+  end
+
+  describe "ip resolution" do
+    test "localhost is resolved as 127.0.0.1" do
+      assert ['127.0.0.1'] = Connection.resolve_ips('localhost')
+    end
+
+    test "rabbit can be resolved into an ip" do
+      assert [ip] = Connection.resolve_ips('rabbit')
+      assert {:ok, _} = :inet.parse_address(ip)
+    end
+
+    test "unknown host will not be resolved" do
+      assert ['nonexistent'] = Connection.resolve_ips('nonexistent')
+    end
   end
 end
