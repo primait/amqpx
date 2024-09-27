@@ -23,7 +23,7 @@ defmodule ConnectionTest do
              Connection.open(
                username: "amqpx",
                password: "amqpx",
-               host: 'rabbit',
+               host: ~c"rabbit",
                obfuscate_password: @obfuscate_password
              )
 
@@ -38,7 +38,7 @@ defmodule ConnectionTest do
   test "open connection using both uri and options" do
     assert {:ok, conn} =
              Connection.open("amqp://amqpx:amqpx@nonexistent:5672",
-               host: 'rabbit',
+               host: ~c"rabbit",
                obfuscate_password: @obfuscate_password
              )
 
@@ -48,7 +48,7 @@ defmodule ConnectionTest do
   test "open connection with uri, name, and options" do
     assert {:ok, conn} =
              Connection.open("amqp://amqpx:amqpx@nonexistent:5672", "my-connection",
-               host: 'rabbit',
+               host: ~c"rabbit",
                obfuscate_password: @obfuscate_password
              )
 
@@ -66,21 +66,21 @@ defmodule ConnectionTest do
 
     assert params[:username] == "amqpx"
     assert params[:password] == "amqpx"
-    assert params[:host] == 'rabbit'
+    assert params[:host] == ~c"rabbit"
   end
 
   describe "ip resolution" do
     test "localhost is resolved as 127.0.0.1" do
-      assert ['127.0.0.1'] = Connection.resolve_ips('localhost')
+      assert [~c"127.0.0.1"] = Connection.resolve_ips(~c"localhost")
     end
 
     test "rabbit can be resolved into an ip" do
-      assert [ip] = Connection.resolve_ips('rabbit')
+      assert [ip] = Connection.resolve_ips(~c"rabbit")
       assert {:ok, _} = :inet.parse_address(ip)
     end
 
     test "unknown host will not be resolved" do
-      assert ['nonexistent'] = Connection.resolve_ips('nonexistent')
+      assert [~c"nonexistent"] = Connection.resolve_ips(~c"nonexistent")
     end
   end
 end

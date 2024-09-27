@@ -14,7 +14,7 @@ defmodule Amqpx.Connection do
     username: "guest",
     password: "guest",
     virtual_host: "/",
-    host: 'localhost',
+    host: ~c"localhost",
     port: 5672,
     channel_max: 0,
     frame_max: 0,
@@ -210,7 +210,9 @@ defmodule Amqpx.Connection do
         {:ok, pid} ->
           IO.inspect("Connection opened to: #{ip}")
           {:halt, {:ok, %Connection{pid: pid}}}
-        error -> {:cont, error}
+
+        error ->
+          {:cont, error}
       end
     end)
   end
@@ -233,7 +235,9 @@ defmodule Amqpx.Connection do
     case :inet.gethostbyname(host) do
       {:ok, {:hostent, _, _, _, _, ips}} ->
         ips |> Enum.map(&:inet.ntoa/1) |> Enum.dedup()
-      _ -> [host]
+
+      _ ->
+        [host]
     end
   end
 end
