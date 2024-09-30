@@ -197,7 +197,8 @@ defmodule Amqpx.Connection do
     end
   end
 
-  @spec do_open(Keyword.t(), Keyword.t(), String.t()) :: {:ok, t()} | {:error, atom()} | {:error, any()}
+  @spec do_open(Keyword.t(), Keyword.t(), String.t()) ::
+          {:ok, t()} | {:error, atom()} | {:error, any()}
   defp do_open(params, default_params, name) do
     params
     |> keys_get(default_params, :host)
@@ -208,7 +209,6 @@ defmodule Amqpx.Connection do
 
       case :amqp_connection.start(amqp_params, name) do
         {:ok, pid} ->
-          IO.inspect("Connection opened to: #{ip}")
           {:halt, {:ok, %Connection{pid: pid}}}
 
         error ->
@@ -229,7 +229,8 @@ defmodule Amqpx.Connection do
 
   defp normalize_ssl_options(options), do: options
 
-  # Resolves the IP addresses of a given hostname. If the hostname cannot be resolved, it returns the hostname itself.
+  # Resolves the IP addresses of a given hostname. If the hostname
+  # cannot be resolved, it returns the hostname itself.
   @spec resolve_ips(charlist) :: [charlist]
   def resolve_ips(host) do
     case :inet.gethostbyname(host) do
