@@ -5,7 +5,7 @@ defmodule Amqpx.Connection do
 
   import Amqpx.Core
 
-  alias Amqpx.{Connection, Helper}
+  alias Amqpx.{Connection, DNS, Helper}
 
   defstruct [:pid]
   @type t :: %Connection{pid: pid}
@@ -40,7 +40,7 @@ defmodule Amqpx.Connection do
   end
 
   @doc """
-  Opens an new Connection to an Amqpx broker.
+  Opens a new Connection to an Amqpx broker.
 
   The connections created by this module are supervised under  amqp_client's supervision tree.
   Please note that connections do not get restarted automatically by the supervision tree in
@@ -203,7 +203,7 @@ defmodule Amqpx.Connection do
     params
     |> keys_get(default_params, :host)
     |> to_charlist()
-    |> resolve_ips()
+    |> DNS.resolve_ips()
     |> Enum.reduce_while(nil, fn ip, _ ->
       amqp_params = params |> Keyword.put(:host, ip) |> merge_options(default_params)
 
@@ -228,17 +228,4 @@ defmodule Amqpx.Connection do
   end
 
   defp normalize_ssl_options(options), do: options
-
-  # Resolves the IP addresses of a given hostname. If the hostname
-  # cannot be resolved, it returns the hostname itself.
-  @spec resolve_ips(charlist) :: [charlist]
-  def resolve_ips(host) do
-    case :inet.gethostbyname(host) do
-      {:ok, {:hostent, _, _, _, _, ips}} ->
-        ips |> Enum.map(&:inet.ntoa/1) |> Enum.dedup()
-
-      _ ->
-        [host]
-    end
-  end
 end
