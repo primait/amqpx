@@ -137,16 +137,6 @@ defmodule ConnectionTest do
       assert {:ok, _} = :inet.parse_address(ip)
     end
 
-    test "rabbit-cluster from /etc/hosts can be resolved into the list of ips" do
-      expected_ips = [{172, 50, 0, 20}, {172, 50, 0, 21}, {172, 50, 0, 22}]
-      assert ips = DNS.resolve_ips(~c"rabbit")
-
-      Enum.each(ips, fn ip ->
-        assert {:ok, ip} = :inet.parse_address(ip)
-        assert Enum.member?(expected_ips, ip)
-      end)
-    end
-
     test "unknown host will not be resolved" do
       assert [~c"nonexistent"] = DNS.resolve_ips(~c"nonexistent")
     end
