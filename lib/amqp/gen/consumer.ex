@@ -14,7 +14,8 @@ defmodule Amqpx.Gen.Consumer do
     prefetch_count: 50,
     backoff: 5_000,
     connection_name: Amqpx.Gen.ConnectionManager,
-    requeue_on_reject: true
+    requeue_on_reject: true,
+    cancel?: false
   ]
 
   @type state() :: %__MODULE__{}
@@ -25,6 +26,13 @@ defmodule Amqpx.Gen.Consumer do
   @optional_callbacks handle_message_rejection: 2
 
   @gen_server_opts [:name, :timeout, :debug, :spawn_opt, :hibernate_after]
+
+  defp signal_handler do
+    case(Application.fetch_env(:amqpx, :signal_handler)) do
+      {:ok, handler} -> handler
+      :error -> Amqpx.NoSignalHandler
+    end
+  end
 
   @spec start_link(opts :: map()) :: GenServer.server()
   def start_link(opts) do
@@ -188,6 +196,8 @@ defmodule Amqpx.Gen.Consumer do
   def terminate(_, %__MODULE__{channel: nil}), do: nil
 
   def terminate(reason, %__MODULE__{channel: channel}) do
+    Logger.warn("Terminating consumer with reason #{inspect(reason)}")
+
     case reason do
       :normal -> close_channel(channel)
       :shutdown -> close_channel(channel)
@@ -211,7 +221,7 @@ defmodule Amqpx.Gen.Consumer do
 
   defp handle_message(
          message,
-         %{delivery_tag: tag, redelivered: redelivered} = meta,
+         %{delivery_tag: tag, redelivered: redelivered, consumer_tag: consumer_tag} = meta,
          %__MODULE__{
            handler_module: handler_module,
            handler_state: handler_state,
@@ -219,9 +229,16 @@ defmodule Amqpx.Gen.Consumer do
            requeue_on_reject: requeue_on_reject
          } = state
        ) do
-    {:ok, handler_state} = handler_module.handle_message(message, meta, handler_state)
-    Basic.ack(state.channel, tag)
-    %{state | handler_state: handler_state}
+    state = cancel?(state, consumer_tag)
+
+    if stopping?() do
+      close_channel(state.channel)
+      state
+    else
+      {:ok, handler_state} = handler_module.handle_message(message, meta, handler_state)
+      Basic.ack(state.channel, tag)
+      %{state | handler_state: handler_state}
+    end
   rescue
     e in _ ->
       Logger.error(Exception.format(:error, e, __STACKTRACE__))
@@ -241,5 +258,22 @@ defmodule Amqpx.Gen.Consumer do
       end)
 
       state
+  end
+
+  @spec draining? :: boolean()
+  def draining?, do: signal_handler().draining?
+
+  def stopping?, do: signal_handler().stopping?
+
+  defp cancel?(%{cancel?: true} = state, _), do: state
+
+  defp cancel?(state, consumer_tag) do
+    Logger.info("Cancelling consumer #{consumer_tag}")
+
+    if draining?() do
+      Basic.cancel(state.channel, consumer_tag)
+    end
+
+    %{state | cancel?: true}
   end
 end
