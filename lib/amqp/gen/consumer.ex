@@ -15,7 +15,7 @@ defmodule Amqpx.Gen.Consumer do
     backoff: 5_000,
     connection_name: Amqpx.Gen.ConnectionManager,
     requeue_on_reject: true,
-    cancel?: false
+    cancelled?: false
   ]
 
   @type state() :: %__MODULE__{}
@@ -26,13 +26,6 @@ defmodule Amqpx.Gen.Consumer do
   @optional_callbacks handle_message_rejection: 2
 
   @gen_server_opts [:name, :timeout, :debug, :spawn_opt, :hibernate_after]
-
-  defp signal_handler do
-    case(Application.fetch_env(:amqpx, :signal_handler)) do
-      {:ok, handler} -> handler
-      :error -> Amqpx.NoSignalHandler
-    end
-  end
 
   @spec start_link(opts :: map()) :: GenServer.server()
   def start_link(opts) do
@@ -229,15 +222,14 @@ defmodule Amqpx.Gen.Consumer do
            requeue_on_reject: requeue_on_reject
          } = state
        ) do
-    state = cancel?(state, consumer_tag)
+    case handle_signals(state, consumer_tag) do
+      {:ok, state} ->
+        {:ok, handler_state} = handler_module.handle_message(message, meta, handler_state)
+        Basic.ack(state.channel, tag)
+        %{state | handler_state: handler_state}
 
-    if stopping?() do
-      close_channel(state.channel)
-      state
-    else
-      {:ok, handler_state} = handler_module.handle_message(message, meta, handler_state)
-      Basic.ack(state.channel, tag)
-      %{state | handler_state: handler_state}
+      {:stop, state} ->
+        state
     end
   rescue
     e in _ ->
@@ -260,20 +252,34 @@ defmodule Amqpx.Gen.Consumer do
       state
   end
 
-  @spec draining? :: boolean()
-  def draining?, do: signal_handler().draining?
+  @type signal_status :: :stopping | :draining | :running
 
-  def stopping?, do: signal_handler().stopping?
-
-  defp cancel?(%{cancel?: true} = state, _), do: state
-
-  defp cancel?(state, consumer_tag) do
-    Logger.info("Cancelling consumer #{consumer_tag}")
-
-    if draining?() do
-      Basic.cancel(state.channel, consumer_tag)
+  @spec get_signal_status :: signal_status()
+  defp get_signal_status do
+    cond do
+      signal_handler().stopping?() -> :stopping
+      signal_handler().draining?() -> :draining
+      true -> :running
     end
-
-    %{state | cancel?: true}
   end
+
+  @spec handle_signals(signal_status(), state(), String.t()) :: {:ok | :stop, state()}
+  defp handle_signals(signal_status \\ get_signal_status(), state, consumer_tag)
+
+  defp handle_signals(:stopping, state, _) do
+    close_channel(state.channel)
+    {:stop, state}
+  end
+
+  defp handle_signals(_, %{cancelled?: true} = state, _), do: {:ok, state}
+
+  defp handle_signals(:draining, state, consumer_tag) do
+    Logger.info("Cancelling consumer #{consumer_tag}")
+    Basic.cancel(state.channel, consumer_tag)
+    {:ok, %{state | cancelled?: true}}
+  end
+
+  defp handle_signals(_, state, _), do: {:ok, state}
+
+  defp signal_handler, do: Application.get_env(:amqpx, :signal_handler, Amqpx.NoSignalHandler)
 end
