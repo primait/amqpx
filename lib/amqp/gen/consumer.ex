@@ -189,7 +189,7 @@ defmodule Amqpx.Gen.Consumer do
   def terminate(_, %__MODULE__{channel: nil}), do: nil
 
   def terminate(reason, %__MODULE__{channel: channel}) do
-    Logger.warn("Terminating consumer with reason #{inspect(reason)}")
+    Logger.info("Terminating consumer with reason #{inspect(reason)}")
 
     case reason do
       :normal -> close_channel(channel)
