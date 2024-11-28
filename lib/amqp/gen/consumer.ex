@@ -266,20 +266,25 @@ defmodule Amqpx.Gen.Consumer do
   @spec handle_signals(signal_status(), state(), String.t()) :: {:ok | :stop, state()}
   defp handle_signals(signal_status \\ get_signal_status(), state, consumer_tag)
 
+  # Close channel when we we need to stop.
   defp handle_signals(:stopping, state, _) do
     close_channel(state.channel)
     {:stop, state}
   end
 
-  defp handle_signals(_, %{cancelled?: true} = state, _), do: {:ok, state}
+  # Continue processing prefetched messages while draining
+  defp handle_signals(:draining, %{cancelled?: true} = state, _), do: {:ok, state}
 
+  # Stop consuming new messages and move to cancelled state
+  # to continue processing prefetched messages
   defp handle_signals(:draining, state, consumer_tag) do
     Logger.info("Cancelling consumer #{consumer_tag}")
     Basic.cancel(state.channel, consumer_tag)
     {:ok, %{state | cancelled?: true}}
   end
 
-  defp handle_signals(_, state, _), do: {:ok, state}
+  # No signals received run as normal
+  defp handle_signals(:running, state, _), do: {:ok, state}
 
   defp signal_handler, do: Application.get_env(:amqpx, :signal_handler, Amqpx.NoSignalHandler)
 end
