@@ -87,7 +87,7 @@ defmodule Amqpx.Gen.Consumer do
 
   # Confirmation sent by the broker to the consumer process after a Basic.cancel
   def handle_info({:"basic.cancel_ok", _consumer_tag}, state) do
-    {:stop, :basic_cancel_ok, state}
+    {:stop, {:shutdown, :basic_cancel_ok}, state}
   end
 
   def handle_info(
