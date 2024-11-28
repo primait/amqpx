@@ -522,6 +522,41 @@ defmodule Amqpx.Test.AmqpxTest do
     end
   end
 
+  test "should handle stop signal by not consuming any more messages" do
+    start_connection1!()
+    start_consumer_by_name!(Consumer1)
+    start_producer!(:producer)
+
+    payload = %{test: 1}
+
+    with_mocks [
+      {Amqpx.NoSignalHandler, [], stopping?: fn -> true end},
+      {Consumer1, [], []}
+    ] do
+      Producer1.send_payload(payload)
+      :timer.sleep(50)
+      refute called(Consumer1.handle_message(Jason.encode!(payload), :_, :_))
+    end
+  end
+
+  test "should continue to handle messages while draining but not while stopping" do
+    start_connection1!()
+    start_consumer_by_name!(Consumer1)
+    start_producer!(:producer)
+
+    payload = %{test: 1}
+
+    with_mocks [
+      {Amqpx.NoSignalHandler, [], stopping?: [in_series([], [false, true])], draining?: fn -> true end},
+      {Consumer1, [], [handle_message: fn _, _, state -> {:ok, state} end]}
+    ] do
+      Producer1.send_payload(payload)
+      Producer1.send_payload(payload)
+      :timer.sleep(50)
+      assert_called_exactly(Consumer1.handle_message(Jason.encode!(payload), :_, :_), 1)
+    end
+  end
+
   test "the consumer should stop gracefully" do
     start_connection1!()
 
