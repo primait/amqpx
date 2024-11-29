@@ -5,8 +5,10 @@
 
 ## About
 
-A simple Amqp library based on [official elixir amqp client](https://hex.pm/packages/amqp)
-Written to prevent duplicated and boilerplate code to handle all the lifecycle of the amqp connection. Write your publisher or consumer and forget about the rest!
+A simple Amqp library based on
+[official elixir amqp client](https://hex.pm/packages/amqp) Written to prevent
+duplicated and boilerplate code to handle all the lifecycle of the amqp
+connection. Write your publisher or consumer and forget about the rest!
 
 ## Installation
 
@@ -18,10 +20,14 @@ def deps do
 end
 ```
 
-From 3.0.0 Amqpx is no longer an application. This is so the client can choose in which environment or configuration to have consumers up and running.
-You would then need to start your consumers and producer in the client's supervision tree, instead of adding Amqpx to the `extra_application` list as it was in the past.
+From 3.0.0 Amqpx is no longer an application. This is so the client can choose
+in which environment or configuration to have consumers up and running. You
+would then need to start your consumers and producer in the client's supervision
+tree, instead of adding Amqpx to the `extra_application` list as it was in the
+past.
 
-To start all consumers and producer inside your application, using the library helper function:
+To start all consumers and producer inside your application, using the library
+helper function:
 
 ```elixir
 defmodule Application do
@@ -121,16 +127,11 @@ Default parameters:
 - publish_timeout: 1_000
 - backoff: 5_000 (connection retry)
 - exchanges: []
-- publish_retry_options: [
-    max_retries: 0,
-    retry_policy: [],
-    backoff: [
-      base_ms: 10,
-      max_ms: 10_000
-    ]
-  ]
+- publish_retry_options: [ max_retries: 0, retry_policy: [], backoff: [ base_ms:
+  10, max_ms: 10_000 ] ]
 
-You can also declare exchanges from the producer module, simply specify them in the configuration. There is an example below.
+You can also declare exchanges from the producer module, simply specify them in
+the configuration. There is an example below.
 
 ```elixir
 config :myapp, :producer, %{
@@ -141,16 +142,22 @@ config :myapp, :producer, %{
   ]
 }
 ```
+
 #### Publish retry options
 
-- `max_retries`: number of times a `publish` will be retried. A `publish` can be executed at most  (`max_retries` + 1) times 
-- `retry_policy`: collection of error conditions which will cause the `publish` to be retried. Can be a combination of the following atoms:
+- `max_retries`: number of times a `publish` will be retried. A `publish` can be
+  executed at most (`max_retries` + 1) times
+- `retry_policy`: collection of error conditions which will cause the `publish`
+  to be retried. Can be a combination of the following atoms:
   - `:on_publish_rejected` (when the broker itself rejects)
   - `:on_confirm_timeout` (when the confirm from the broker times out)
   - `:on_publish_error` (when there is an error returned at AMQP protocol level)
-- `backoff`: sleep time between `publish` retries. Calculated as `random_between(0, min(cap, base * 2 ** attempt))`
-  - `base_ms`: time in millisecond that is used as `base` term in the formula above
-  - `max_ms`: time in millisecond that is used as `cap` term in the formula above
+- `backoff`: sleep time between `publish` retries. Calculated as
+  `random_between(0, min(cap, base * 2 ** attempt))`
+  - `base_ms`: time in millisecond that is used as `base` term in the formula
+    above
+  - `max_ms`: time in millisecond that is used as `cap` term in the formula
+    above
 
 ## Usage example
 
@@ -198,7 +205,12 @@ end
 
 ## Handle message rejections
 
-You can define an implement an optional callback inside your `Consumer` module that will be called whenever an error is raised in the `handle_message` callback and the `redelivered` flag is set to `true`. This callback can be useful whenever you want to define a standard rejection logic (e.g. datadog alarms and such). 
+You can define an implement an optional callback inside your `Consumer` module
+that will be called whenever an error is raised in the `handle_message` callback
+and the `redelivered` flag is set to `true`. This callback can be useful
+whenever you want to define a standard rejection logic (e.g. datadog alarms and
+such).
+
 ### Consumer
 
 ```elixir

@@ -16,8 +16,8 @@ jobs:
     steps:
       - uses: erlef/setup-beam@v1
         with:
-          elixir-version: 1.13
-          otp-version: 24
+          elixir-version: 1.14
+          otp-version: 25
 
       # Check out the code.
       - name: Checkout
@@ -29,7 +29,6 @@ jobs:
           127.0.0.1 rabbit
           127.0.0.1 rabbit_two
           " | sudo tee /etc/hosts
-
 
       # Define how to cache deps. Restores existing cache if present.
       - name: Cache deps
@@ -108,7 +107,7 @@ jobs:
       - ci
     runs-on: ubuntu-latest
     steps:
-        - name: Decide whether the needed jobs succeeded or failed
-          uses: re-actors/alls-green@release/v1
-          with:
-            jobs: ${{ toJSON(needs) }}
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}
