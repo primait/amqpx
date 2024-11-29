@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [6.1.0] - 2024-11-29
+
+### Added
+
+- ([#208](https://github.com/primait/amqpx/pull/208)) Introduces the possibility of configuring a signal handler which can be used for graceful termination. When the SIGTERM arrive, we cancel all the consumer to stop taking new messages.
+
+---
+
 ## [6.0.4] - 2024-09-02
 
 ### Added
@@ -57,7 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - ([#129](https://github.com/primait/amqpx/pull/)) Default binding for DLX queues instead of wildcard
 
-[Unreleased]: https://github.com/primait/amqpx/compare/6.0.4...HEAD
+[Unreleased]: https://github.com/primait/amqpx/compare/6.1.0...HEAD
+[6.1.0]: https://github.com/primait/amqpx/compare/6.0.4...6.1.0
 [6.0.4]: https://github.com/primait/amqpx/compare/6.0.3...6.0.4
 [6.0.3]: https://github.com/primait/amqpx/compare/6.0.2...6.0.3
 [6.0.2]: https://github.com/primait/amqpx/compare/6.0.1...6.0.2
