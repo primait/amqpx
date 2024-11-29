@@ -1,20 +1,38 @@
 defmodule Amqpx.SignalHandler do
   @moduledoc """
-  Signal handler behaviour is used to catch the SIGTERM signal and gracefully stop the application.
-  In the context of Rabbitmq, it will:
-    cancel the channel when we are in draining mode to stop prefetch new messages.
-    close the channel when we are in stopping mode to reject all the unacked messages that we did't start to consume.
-
-  Check in Peano how to use it.
-
+  This module is responsible for handling signals sent to the application.
   """
-  @doc """
-  Check if the application is in draining mode.
-  """
-  @callback draining? :: boolean
+  use GenServer
 
-  @doc """
-  Check if the application is in stopping mode.
-  """
-  @callback stopping? :: boolean
+  def start_link do
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+  end
+
+  def init(_) do
+    {:ok, :running}
+  end
+
+  def draining do
+    GenServer.call(__MODULE__, :draining)
+  end
+
+  def stopping do
+    GenServer.call(__MODULE__, :stopping)
+  end
+
+  def get_signal_status do
+    GenServer.call(__MODULE__, :get_signal_status)
+  end
+
+  def handle_call(:draining, _from, _state) do
+    {:reply, :ok, :draining}
+  end
+
+  def handle_call(:stopping, _from, _state) do
+    {:reply, :ok, :stopping}
+  end
+
+  def handle_call(:get_signal_status, _from, state) do
+    {:reply, state, state}
+  end
 end

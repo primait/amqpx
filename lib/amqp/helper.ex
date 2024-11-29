@@ -10,7 +10,8 @@ defmodule Amqpx.Helper do
   end
 
   def consumers_supervisor_configuration(handlers_conf) do
-    Enum.map(handlers_conf, &Supervisor.child_spec({Amqpx.Gen.Consumer, &1}, id: UUID.uuid1()))
+    amqp_signal_handler() ++
+      Enum.map(handlers_conf, &Supervisor.child_spec({Amqpx.Gen.Consumer, &1}, id: UUID.uuid1()))
   end
 
   def producer_supervisor_configuration(producer_conf) do
@@ -179,4 +180,12 @@ defmodule Amqpx.Helper do
   def setup_exchange(channel, %{name: name, type: type}) do
     Exchange.declare(channel, name, type)
   end
+
+  defp amqp_signal_handler,
+    do: [
+      %{
+        id: Amqpx.SignalHandler,
+        start: {Amqpx.SignalHandler, :start_link, []}
+      }
+    ]
 end
