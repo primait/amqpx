@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- ([#208](https://github.com/primait/amqpx/pull/208)) Introduce the graceful termination using the application signal handler to cancel the consumers on draining phase and close the channels on stopping phase.
+- ([#208](https://github.com/primait/amqpx/pull/208)) Introduces the possibility of configuring a signal handler which can be used for graceful termination. When the SIGTERM arrive, we cancel all the consumer to stop taking new messages.
 
 ---
 
