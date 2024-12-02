@@ -5,7 +5,7 @@ defmodule Amqpx.Gen.Consumer do
   require Logger
   use GenServer
   import Amqpx.Core
-  alias Amqpx.{Basic, Channel}
+  alias Amqpx.{Basic, Channel, SignalHandler}
 
   defstruct [
     :channel,
@@ -252,19 +252,10 @@ defmodule Amqpx.Gen.Consumer do
       state
   end
 
-  @type signal_status :: :stopping | :draining | :running
-
-  @spec get_signal_status :: signal_status()
-  defp get_signal_status do
-    cond do
-      signal_handler().stopping?() -> :stopping
-      signal_handler().draining?() -> :draining
-      true -> :running
-    end
-  end
+  @type signal_status :: :running | :draining | :stopping
 
   @spec handle_signals(signal_status(), state(), String.t()) :: {:ok | :stop, state()}
-  defp handle_signals(signal_status \\ get_signal_status(), state, consumer_tag)
+  defp handle_signals(signal_status \\ SignalHandler.get_signal_status(), state, consumer_tag)
 
   # Close channel when we we need to stop.
   defp handle_signals(:stopping, state, _) do
@@ -285,6 +276,4 @@ defmodule Amqpx.Gen.Consumer do
 
   # No signals received run as normal
   defp handle_signals(:running, state, _), do: {:ok, state}
-
-  defp signal_handler, do: Application.get_env(:amqpx, :signal_handler, Amqpx.NoSignalHandler)
 end

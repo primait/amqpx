@@ -11,6 +11,7 @@ defmodule Amqpx.Test.AmqpxTest do
   alias Amqpx.Test.Support.Producer3
   alias Amqpx.Test.Support.ProducerWithRetry
   alias Amqpx.Test.Support.ProducerConnectionTwo
+  alias Amqpx.SignalHandler
 
   import Mock
 
@@ -530,7 +531,7 @@ defmodule Amqpx.Test.AmqpxTest do
     payload = %{test: 1}
 
     with_mocks [
-      {Amqpx.NoSignalHandler, [], stopping?: fn -> true end},
+      {SignalHandler, [], get_signal_status: fn -> :stopping end},
       {Consumer1, [], []}
     ] do
       Producer1.send_payload(payload)
@@ -547,7 +548,7 @@ defmodule Amqpx.Test.AmqpxTest do
     payload = %{test: 1}
 
     with_mocks [
-      {Amqpx.NoSignalHandler, [], stopping?: [in_series([], [false, true])], draining?: fn -> true end},
+      {SignalHandler, [], get_signal_status: [in_series([], [:draining, :stopping])]},
       {Consumer1, [], [handle_message: fn _, _, state -> {:ok, state} end]}
     ] do
       Producer1.send_payload(payload)
@@ -639,6 +640,8 @@ defmodule Amqpx.Test.AmqpxTest do
       :amqpx
       |> Application.fetch_env!(:consumers)
       |> Enum.find(&(&1.handler_module == name))
+
+    SignalHandler.start_link()
 
     if is_nil(opts) do
       raise "Consumer #{name} not found"

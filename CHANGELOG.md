@@ -10,6 +10,15 @@ and this project adheres to
 
 ---
 
+## [6.1.1] - 2024-12-02
+
+### Added
+
+- ([#208](https://github.com/primait/amqpx/pull/208)) Reverse the logic for draining.
+  Now the application signal handler call the Amqpx.SignalHandler to trigger the drain.
+
+---
+
 ## [6.1.0] - 2024-11-29
 
 ### Added
@@ -79,7 +88,8 @@ and this project adheres to
 - ([#129](https://github.com/primait/amqpx/pull/)) Default binding for DLX
   queues instead of wildcard
 
-[Unreleased]: https://github.com/primait/amqpx/compare/6.1.0...HEAD
+[Unreleased]: https://github.com/primait/amqpx/compare/6.1.1...HEAD
+[6.1.1]: https://github.com/primait/amqpx/compare/6.1.0...6.1.1
 [6.1.0]: https://github.com/primait/amqpx/compare/6.0.4...6.1.0
 [6.0.4]: https://github.com/primait/amqpx/compare/6.0.3...6.0.4
 [6.0.3]: https://github.com/primait/amqpx/compare/6.0.2...6.0.3
