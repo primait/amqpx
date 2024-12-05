@@ -120,6 +120,32 @@ defmodule HelperTest do
                  end
   end
 
+  test "bad configuration with empty dead letter exchange and routing key is not a blocking error if the check is disabled",
+       meta do
+    queue_name = rand_name()
+    routing_key_name = rand_name()
+    exchange_name = rand_name()
+
+    Application.put_env(:amqpx, :skip_dlk_check, true)
+
+    :ok =
+      Helper.declare(meta[:chan], %{
+        exchanges: [
+          %{name: exchange_name, opts: [durable: true], routing_keys: [routing_key_name], type: :topic}
+        ],
+        opts: [
+          durable: true,
+          arguments: [
+            {"x-dead-letter-exchange", :longstr, ""},
+            {"x-dead-letter-routing-key", :longstr, ""}
+          ]
+        ],
+        queue: queue_name
+      })
+
+    Application.put_env(:amqpx, :skip_dlk_check, false)
+  end
+
   defp rand_name do
     :crypto.strong_rand_bytes(8) |> Base.encode64()
   end
