@@ -1,9 +1,9 @@
-FROM public.ecr.aws/prima/elixir:1.12.0-1
+FROM public.ecr.aws/prima/elixir:1.14.2-5
 
 WORKDIR /code
 
 USER app
 
-COPY ["entrypoint", "/entrypoint"]
+RUN mix local.hex --force && \
+    mix local.rebar --force
 
-ENTRYPOINT ["/entrypoint"]

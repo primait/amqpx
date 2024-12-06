@@ -7,8 +7,6 @@ defmodule Amqpx.Helper do
 
   alias Amqpx.{Exchange, Queue}
 
-  @skip_dlk_check Application.compile_env(:amqpx, :skip_dlk_check, false)
-
   def manager_supervisor_configuration(config) do
     {Amqpx.Gen.ConnectionManager, %{connection_params: encrypt_password(config)}}
   end
@@ -96,7 +94,7 @@ defmodule Amqpx.Helper do
   end
 
   def setup_dead_lettering(_channel, %{queue: dlq, exchange: "", routing_key: bad_dlq}) do
-    case @skip_dlk_check do
+    case Enum.member?(skip_dlk_check_for(), bad_dlq) do
       false ->
         raise "If x-dead-letter-exchange is an empty string, x-dead-letter-routing-key should be '#{dlq}' instead of '#{bad_dlq}'"
 
@@ -202,4 +200,6 @@ defmodule Amqpx.Helper do
         start: {Amqpx.SignalHandler, :start_link, []}
       }
     ]
+
+  defp skip_dlk_check_for, do: Application.get_env(:amqpx, :skip_dlk_check_for, [])
 end
