@@ -3,6 +3,8 @@ defmodule Amqpx.Helper do
   Helper functions
   """
 
+  require Logger
+
   alias Amqpx.{Exchange, Queue}
 
   def manager_supervisor_configuration(config) do
@@ -92,7 +94,14 @@ defmodule Amqpx.Helper do
   end
 
   def setup_dead_lettering(_channel, %{queue: dlq, exchange: "", routing_key: bad_dlq}) do
-    raise "If x-dead-letter-exchange is an empty string, x-dead-letter-routing-key should be '#{dlq}' instead of '#{bad_dlq}'"
+    msg =
+      "If x-dead-letter-exchange is an empty string, x-dead-letter-routing-key should be '#{dlq}' instead of '#{bad_dlq}'"
+
+    if Enum.member?(skip_dead_letter_routing_key_check_for(), bad_dlq) do
+      Logger.warn(msg)
+    else
+      raise msg
+    end
   end
 
   def setup_dead_lettering(channel, %{queue: dlq, exchange: exchange, routing_key: routing_key}) do
@@ -188,4 +197,7 @@ defmodule Amqpx.Helper do
         start: {Amqpx.SignalHandler, :start_link, []}
       }
     ]
+
+  defp skip_dead_letter_routing_key_check_for,
+    do: Application.get_env(:amqpx, :skip_dead_letter_routing_key_check_for, [])
 end

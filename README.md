@@ -245,3 +245,17 @@ defmodule Myapp.HandleRejectionConsumer do
   end
 end
 ```
+
+## Local Environment
+
+### Test suite
+
+In order to run the test suite, you need to startup the docker compose and jump into it with:
+```
+docker compose run --service-ports console bash
+```
+
+and run the test suite with:
+```
+mix test
+```

@@ -1,14 +1,18 @@
 version: "2"
 services:
-  web:
+  console:
     build: .
     volumes:
-      - .:/$PWD
-      - ~/.cache:/home/app/.cache
-    working_dir: $PWD
-    links:
-      - rabbit
-      - rabbit_two
+      - .:/code:delegated
+    working_dir: /code
+    stdin_open: true 
+    tty: true
+    command: bash
+    depends_on:
+      rabbit:
+        condition: service_started
+      rabbit_two:
+        condition: service_healthy
 
   rabbit:
     image: rabbitmq:3-management
@@ -18,6 +22,11 @@ services:
       RABBITMQ_DEFAULT_PASS: amqpx
     ports:
       - "23555:15672"
+    healthcheck:
+      test: "rabbitmq-diagnostics -q ping"
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   rabbit_two:
     image: rabbitmq:3-management
@@ -27,3 +36,8 @@ services:
       RABBITMQ_DEFAULT_PASS: amqpx
     ports:
       - "23556:15672"
+    healthcheck:
+      test: "rabbitmq-diagnostics -q ping"
+      interval: 10s
+      timeout: 5s
+      retries: 3
