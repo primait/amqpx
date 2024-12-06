@@ -127,7 +127,7 @@ defmodule HelperTest do
     exchange_name = rand_name()
     wrong_dead_letter_key = rand_name()
 
-    Application.put_env(:amqpx, :skip_dlk_check_for, [wrong_dead_letter_key])
+    Application.put_env(:amqpx, :skip_dead_letter_routing_key_check_for, [wrong_dead_letter_key])
 
     :ok =
       Helper.declare(meta[:chan], %{
@@ -144,7 +144,7 @@ defmodule HelperTest do
         queue: queue_name
       })
 
-    Application.put_env(:amqpx, :skip_dlk_check, [])
+    Application.put_env(:amqpx, :skip_dead_letter_routing_key_check_for, [])
   end
 
   defp rand_name do

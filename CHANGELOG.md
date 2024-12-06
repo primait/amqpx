@@ -10,6 +10,15 @@ and this project adheres to
 
 ---
 
+## [6.1.2] - 2024-12-02
+
+### Added
+
+- ([#211](https://github.com/primait/amqpx/pull/211)) Allow to skip the DLK check for a 
+  list of dead letter queues
+
+---
+
 ## [6.1.1] - 2024-12-02
 
 ### Added
@@ -88,7 +97,8 @@ and this project adheres to
 - ([#129](https://github.com/primait/amqpx/pull/)) Default binding for DLX
   queues instead of wildcard
 
-[Unreleased]: https://github.com/primait/amqpx/compare/6.1.1...HEAD
+[Unreleased]: https://github.com/primait/amqpx/compare/6.1.2...HEAD
+[6.1.2]: https://github.com/primait/amqpx/compare/6.1.1...6.1.2
 [6.1.1]: https://github.com/primait/amqpx/compare/6.1.0...6.1.1
 [6.1.0]: https://github.com/primait/amqpx/compare/6.0.4...6.1.0
 [6.0.4]: https://github.com/primait/amqpx/compare/6.0.3...6.0.4

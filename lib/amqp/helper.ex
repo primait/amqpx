@@ -94,16 +94,13 @@ defmodule Amqpx.Helper do
   end
 
   def setup_dead_lettering(_channel, %{queue: dlq, exchange: "", routing_key: bad_dlq}) do
-    case Enum.member?(skip_dlk_check_for(), bad_dlq) do
-      false ->
-        raise "If x-dead-letter-exchange is an empty string, x-dead-letter-routing-key should be '#{dlq}' instead of '#{bad_dlq}'"
+    msg =
+      "If x-dead-letter-exchange is an empty string, x-dead-letter-routing-key should be '#{dlq}' instead of '#{bad_dlq}'"
 
-      true ->
-        Logger.warn(
-          "If x-dead-letter-exchange is an empty string, x-dead-letter-routing-key should be '#{dlq}' instead of '#{bad_dlq}'"
-        )
-
-        :ok
+    if Enum.member?(skip_dead_letter_routing_key_check_for(), bad_dlq) do
+      Logger.warn(msg)
+    else
+      raise msg
     end
   end
 
@@ -201,5 +198,6 @@ defmodule Amqpx.Helper do
       }
     ]
 
-  defp skip_dlk_check_for, do: Application.get_env(:amqpx, :skip_dlk_check_for, [])
+  defp skip_dead_letter_routing_key_check_for,
+    do: Application.get_env(:amqpx, :skip_dead_letter_routing_key_check_for, [])
 end
