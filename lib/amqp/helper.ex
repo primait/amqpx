@@ -5,21 +5,49 @@ defmodule Amqpx.Helper do
 
   require Logger
 
-  alias Amqpx.{Exchange, Queue}
+  alias Amqpx.{Basic, Channel, Exchange, Queue}
 
+  # Supervisor.module_spec() has been introduced with elixir 1.16
+  # we can remove this when we update the minimum supported version
+  @type module_spec :: {module, arg :: any}
+
+  @type exchange_spec :: %{
+          name: Basic.exchange(),
+          type: atom,
+          routing_keys: [String.t()],
+          opts: Keyword.t()
+        }
+
+  @type queue_spec :: %{
+          :queue => Basic.queue(),
+          :exchanges => [exchange_spec],
+          optional(:opts) => Keyword.t()
+        }
+
+  @type dead_letter_queue_spec :: %{
+          :queue => Basic.queue(),
+          :exchange => Basic.exchange(),
+          :routing_key => String.t(),
+          optional(:original_routing_keys) => [String.t() | [String.t()]]
+        }
+
+  @spec manager_supervisor_configuration(Keyword.t()) :: module_spec
   def manager_supervisor_configuration(config) do
     {Amqpx.Gen.ConnectionManager, %{connection_params: encrypt_password(config)}}
   end
 
+  @spec consumers_supervisor_configuration([handler_conf :: map]) :: [Supervisor.child_spec()]
   def consumers_supervisor_configuration(handlers_conf) do
     amqp_signal_handler() ++
       Enum.map(handlers_conf, &Supervisor.child_spec({Amqpx.Gen.Consumer, &1}, id: UUID.uuid1()))
   end
 
+  @spec producer_supervisor_configuration(producer_conf :: map) :: module_spec
   def producer_supervisor_configuration(producer_conf) do
     {Amqpx.Gen.Producer, producer_conf}
   end
 
+  @spec encrypt_password(Keyword.t()) :: Keyword.t()
   def encrypt_password(config) do
     case Keyword.get(config, :obfuscate_password, true) do
       true ->
@@ -30,6 +58,7 @@ defmodule Amqpx.Helper do
     end
   end
 
+  @spec get_password(Keyword.t(), Keyword.t() | nil) :: Keyword.value()
   def get_password(config, nil) do
     case Keyword.get(config, :obfuscate_password, true) do
       true ->
@@ -50,6 +79,7 @@ defmodule Amqpx.Helper do
     end
   end
 
+  @spec declare(Channel.t(), queue_spec) :: :ok | no_return
   def declare(
         channel,
         %{
@@ -87,6 +117,7 @@ defmodule Amqpx.Helper do
     setup_queue(channel, queue)
   end
 
+  @spec setup_dead_lettering(Channel.t(), dead_letter_queue_spec) :: :ok | {:ok, map} | Basic.error()
   def setup_dead_lettering(channel, %{queue: dlq, exchange: "", routing_key: dlq}) do
     # DLX will work through [default exchange](https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchange-default)
     # since `x-dead-letter-routing-key` matches the queue name
@@ -122,6 +153,7 @@ defmodule Amqpx.Helper do
     end)
   end
 
+  @spec setup_queue(Channel.t(), queue_spec) :: :ok | no_return
   def setup_queue(channel, %{
         queue: queue,
         exchanges: exchanges,
@@ -141,6 +173,7 @@ defmodule Amqpx.Helper do
     Enum.each(exchanges, &setup_exchange(channel, queue, &1))
   end
 
+  @spec setup_exchange(Channel.t(), Basic.queue(), exchange_spec) :: :ok | Basic.error() | no_return
   def setup_exchange(channel, queue, %{
         name: name,
         type: type,
@@ -190,6 +223,7 @@ defmodule Amqpx.Helper do
     Exchange.declare(channel, name, type)
   end
 
+  @spec amqp_signal_handler() :: [Supervisor.child_spec()]
   defp amqp_signal_handler,
     do: [
       %{
