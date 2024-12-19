@@ -28,7 +28,8 @@ defmodule Amqpx.Helper do
           :queue => Basic.queue(),
           :exchange => Basic.exchange(),
           :routing_key => String.t(),
-          optional(:original_routing_keys) => [String.t() | [String.t()]]
+          optional(:original_routing_keys) => [String.t() | [String.t()]],
+          optional(:queue_opts) => Keyword.t()
         }
 
   @spec manager_supervisor_configuration(Keyword.t()) :: module_spec
@@ -118,10 +119,10 @@ defmodule Amqpx.Helper do
   end
 
   @spec setup_dead_lettering(Channel.t(), dead_letter_queue_spec) :: :ok | {:ok, map} | Basic.error()
-  def setup_dead_lettering(channel, %{queue: dlq, exchange: "", routing_key: dlq}) do
+  def setup_dead_lettering(channel, %{queue: dlq, exchange: "", routing_key: dlq} = spec) do
     # DLX will work through [default exchange](https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchange-default)
     # since `x-dead-letter-routing-key` matches the queue name
-    Queue.declare(channel, dlq, durable: true)
+    Queue.declare(channel, dlq, dead_letter_queue_opts(spec))
   end
 
   def setup_dead_lettering(_channel, %{queue: dlq, exchange: "", routing_key: bad_dlq}) do
@@ -135,15 +136,18 @@ defmodule Amqpx.Helper do
     end
   end
 
-  def setup_dead_lettering(channel, %{queue: dlq, exchange: exchange, routing_key: routing_key}) do
+  def setup_dead_lettering(channel, %{queue: dlq, exchange: exchange, routing_key: routing_key} = spec) do
     Exchange.declare(channel, exchange, :topic, durable: true)
-    Queue.declare(channel, dlq, durable: true)
+    Queue.declare(channel, dlq, dead_letter_queue_opts(spec))
     Queue.bind(channel, dlq, exchange, routing_key: routing_key)
   end
 
-  def setup_dead_lettering(channel, %{queue: dlq, exchange: exchange, original_routing_keys: original_routing_keys}) do
+  def setup_dead_lettering(
+        channel,
+        %{queue: dlq, exchange: exchange, original_routing_keys: original_routing_keys} = spec
+      ) do
     Exchange.declare(channel, exchange, :topic, durable: true)
-    Queue.declare(channel, dlq, durable: true)
+    Queue.declare(channel, dlq, dead_letter_queue_opts(spec))
 
     original_routing_keys
     |> List.flatten()
@@ -151,6 +155,11 @@ defmodule Amqpx.Helper do
     |> Enum.each(fn rk ->
       :ok = Queue.bind(channel, dlq, exchange, routing_key: rk)
     end)
+  end
+
+  @spec dead_letter_queue_opts(dead_letter_queue_spec) :: Keyword.t()
+  defp dead_letter_queue_opts(spec) do
+    Map.get(spec, :queue_opts, durable: true)
   end
 
   @spec setup_queue(Channel.t(), queue_spec) :: :ok | no_return
