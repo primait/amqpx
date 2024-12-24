@@ -7,6 +7,8 @@ defmodule Amqpx.Helper do
 
   alias Amqpx.{Basic, Channel, Exchange, Queue}
 
+  @dead_letter_queue_defaults [durable: true]
+
   # Supervisor.module_spec() has been introduced with elixir 1.16
   # we can remove this when we update the minimum supported version
   @type module_spec :: {module, arg :: any}
@@ -89,10 +91,12 @@ defmodule Amqpx.Helper do
           exchanges: exchanges
         } = queue
       ) do
-    case Enum.find(opts[:arguments], &match?({"x-dead-letter-exchange", :longstr, _}, &1)) do
+    arguments = Keyword.get(opts, :arguments, [])
+
+    case Enum.find(arguments, &match?({"x-dead-letter-exchange", :longstr, _}, &1)) do
       {_, _, dle} ->
         {dlr_config_key, dlr_config_value} =
-          case Enum.find(opts[:arguments], &match?({"x-dead-letter-routing-key", :longstr, _}, &1)) do
+          case Enum.find(arguments, &match?({"x-dead-letter-routing-key", :longstr, _}, &1)) do
             {_, _, dlrk} ->
               {:routing_key, dlrk}
 
@@ -104,7 +108,8 @@ defmodule Amqpx.Helper do
         setup_dead_lettering(channel, %{
           dlr_config_key => dlr_config_value,
           queue: "#{qname}_errored",
-          exchange: dle
+          exchange: dle,
+          queue_opts: set_dead_letter_queue_type(@dead_letter_queue_defaults, arguments)
         })
 
       nil ->
@@ -155,11 +160,6 @@ defmodule Amqpx.Helper do
     |> Enum.each(fn rk ->
       :ok = Queue.bind(channel, dlq, exchange, routing_key: rk)
     end)
-  end
-
-  @spec dead_letter_queue_opts(dead_letter_queue_spec) :: Keyword.t()
-  defp dead_letter_queue_opts(spec) do
-    Map.get(spec, :queue_opts, durable: true)
   end
 
   @spec setup_queue(Channel.t(), queue_spec) :: :ok | no_return
@@ -230,6 +230,22 @@ defmodule Amqpx.Helper do
 
   def setup_exchange(channel, %{name: name, type: type}) do
     Exchange.declare(channel, name, type)
+  end
+
+  @spec dead_letter_queue_opts(dead_letter_queue_spec) :: Keyword.t()
+  defp dead_letter_queue_opts(spec) do
+    Map.get(spec, :queue_opts, @dead_letter_queue_defaults)
+  end
+
+  @spec set_dead_letter_queue_type(Keyword.t(), [{String.t(), atom, any}]) :: Keyword.t()
+  defp set_dead_letter_queue_type(dlq_opts, queue_args) do
+    case Enum.find(queue_args, &match?({"x-queue-type", :longstr, _}, &1)) do
+      nil ->
+        dlq_opts
+
+      queue_type ->
+        Keyword.update(dlq_opts, :arguments, [queue_type], &[queue_type | &1])
+    end
   end
 
   @spec amqp_signal_handler() :: [Supervisor.child_spec()]
