@@ -8,9 +8,17 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Updated
+
+- rabbit libraries to `amqp_client` and `rabbit_common` to 4.0
+
+- Increased minimum supported elixir version to 1.16, otp 26
+
+This is due to elixir rabbit not supporting 
+
 ---
 
-## [6.1.2] - 2024-12-02
+## [6.1.2] - 2024-12-02:q
 
 ### Added
 
