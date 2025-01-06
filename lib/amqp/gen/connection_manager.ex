@@ -56,7 +56,7 @@ defmodule Amqpx.Gen.ConnectionManager do
   end
 
   def handle_info(message, state) do
-    Logger.warn("Unknown message received #{inspect(message)}")
+    Logger.warning("Unknown message received #{inspect(message)}")
     {:noreply, state}
   end
 

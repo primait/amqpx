@@ -8,8 +8,8 @@ defmodule ConnectionTest do
 
   @obfuscate_password false
 
-  @invalid_ip '192.168.1.1'
-  @valid_ip '192.168.1.2'
+  @invalid_ip ~c"192.168.1.1"
+  @valid_ip ~c"192.168.1.2"
 
   @open_options [
     username: "amqpx",
