@@ -51,8 +51,8 @@ defmodule Amqpx.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:amqp_client, "~> 3.9"},
-      {:rabbit_common, "~> 3.9"},
+      {:amqp_client, "~> 4.0"},
+      {:rabbit_common, "~> 4.0"},
       {:elixir_uuid, "~> 1.2"},
       {:credo, "~> 1.5", only: [:dev, :test, :gha]},
       {:mock, "~> 0.3.7", only: [:test, :gha]},
