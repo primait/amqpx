@@ -31,7 +31,7 @@ defmodule Amqpx.Gen.Producer do
 
   # Public API
 
-  @spec start_link(opts :: map()) :: GenServer.server()
+  @spec start_link(opts :: map()) :: GenServer.on_start()
   def start_link(opts) do
     gen_server_opts =
       opts
