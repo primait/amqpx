@@ -98,7 +98,7 @@ defmodule Amqpx.Helper do
       "If x-dead-letter-exchange is an empty string, x-dead-letter-routing-key should be '#{dlq}' instead of '#{bad_dlq}'"
 
     if Enum.member?(skip_dead_letter_routing_key_check_for(), bad_dlq) do
-      Logger.warn(msg)
+      Logger.warning(msg)
     else
       raise msg
     end

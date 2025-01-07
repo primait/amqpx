@@ -451,6 +451,8 @@ defmodule Amqpx.Test.AmqpxTest do
 
   describe "configuration validation" do
     test "if retry_policy is configured, max_retries must be > 0" do
+      Process.flag(:trap_exit, true)
+
       assert {:error, {:invalid_configuration, "when retry policy is configured, max_retries must be > 0"}} =
                Amqpx.Gen.Producer.start_link(%{
                  name: :producer_misconfigured_retry_policy_max_retries,
@@ -471,6 +473,8 @@ defmodule Amqpx.Test.AmqpxTest do
     end
 
     test "if retry_policy is configured, max_retries must be set" do
+      Process.flag(:trap_exit, true)
+
       assert {:error, {:invalid_configuration, "when retry policy is configured, max_retries must be > 0"}} =
                Amqpx.Gen.Producer.start_link(%{
                  name: :producer_misconfigured_retry_policy_max_retries,
