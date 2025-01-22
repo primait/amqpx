@@ -6,16 +6,18 @@
 ## About
 
 A simple Amqp library based on
-[official elixir amqp client](https://hex.pm/packages/amqp) Written to prevent
-duplicated and boilerplate code to handle all the lifecycle of the amqp
-connection. Write your publisher or consumer and forget about the rest!
+[official elixir amqp client](https://hex.pm/packages/amqp).
+
+Written to prevent duplicated and boilerplate code to handle all the lifecycle
+of the amqp connection. Write your publisher or consumer and forget about the
+rest!
 
 ## Installation
 
 ```elixir
 def deps do
   [
-    {:amqpx, "~> 6.0.2"}
+    {:amqpx, "~> 6.1.2"}
   ]
 end
 ```
@@ -250,12 +252,15 @@ end
 
 ### Test suite
 
-In order to run the test suite, you need to startup the docker compose and jump into it with:
+In order to run the test suite, you need to startup the docker compose and jump
+into it with:
+
 ```
 docker compose run --service-ports console bash
 ```
 
 and run the test suite with:
+
 ```
 mix test
 ```
