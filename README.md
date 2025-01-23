@@ -17,7 +17,7 @@ rest!
 ```elixir
 def deps do
   [
-    {:amqpx, "~> 6.1.2"}
+    {:amqpx, "~> 6.1.3"}
   ]
 end
 ```
