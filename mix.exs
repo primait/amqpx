@@ -1,11 +1,13 @@
 defmodule Amqpx.MixProject do
   use Mix.Project
 
+  @version "6.1.3"
+
   def project do
     [
       app: :amqpx,
       name: "amqpx",
-      version: "6.1.2",
+      version: @version,
       elixir: "~> 1.16",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :production,
