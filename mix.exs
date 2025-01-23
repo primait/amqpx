@@ -1,11 +1,13 @@
 defmodule Amqpx.MixProject do
   use Mix.Project
 
+  @version "6.1.3"
+
   def project do
     [
       app: :amqpx,
       name: "amqpx",
-      version: "6.1.2",
+      version: @version,
       elixir: "~> 1.16",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :production,
@@ -25,7 +27,8 @@ defmodule Amqpx.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger],
+      mod: {Amqpx.Application, []}
     ]
   end
 
