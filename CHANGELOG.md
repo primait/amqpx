@@ -10,6 +10,22 @@ and this project adheres to
 
 ---
 
+## [6.1.3] - 2025-01-23
+
+### Fixed
+
+- Elixir applications are no more forced to start `Amqpx.SignalHandler` manually
+
+### Updated
+
+- rabbit libraries to `amqp_client` and `rabbit_common` to 4.0
+
+- Increased minimum supported elixir version to 1.16, otp 26
+
+This is due to elixir rabbit not supporting the older versions of the libraries
+
+---
+
 ## [6.1.2] - 2024-12-02
 
 ### Added
@@ -97,7 +113,9 @@ and this project adheres to
 - ([#129](https://github.com/primait/amqpx/pull/)) Default binding for DLX
   queues instead of wildcard
 
-[Unreleased]: https://github.com/primait/amqpx/compare/6.1.2...HEAD
+
+[Unreleased]: https://github.com/primait/amqpx/compare/6.1.3...HEAD
+[6.1.3]: https://github.com/primait/amqpx/compare/6.1.2...6.1.3
 [6.1.2]: https://github.com/primait/amqpx/compare/6.1.1...6.1.2
 [6.1.1]: https://github.com/primait/amqpx/compare/6.1.0...6.1.1
 [6.1.0]: https://github.com/primait/amqpx/compare/6.0.4...6.1.0

@@ -1,12 +1,14 @@
 defmodule Amqpx.MixProject do
   use Mix.Project
 
+  @version "6.1.3"
+
   def project do
     [
       app: :amqpx,
       name: "amqpx",
-      version: "6.1.2",
-      elixir: "~> 1.14",
+      version: @version,
+      elixir: "~> 1.16",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :production,
       deps: deps(),
@@ -25,7 +27,8 @@ defmodule Amqpx.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger],
+      mod: {Amqpx.Application, []}
     ]
   end
 
@@ -51,8 +54,8 @@ defmodule Amqpx.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:amqp_client, "~> 3.9"},
-      {:rabbit_common, "~> 3.9"},
+      {:amqp_client, "~> 4.0"},
+      {:rabbit_common, "~> 4.0"},
       {:elixir_uuid, "~> 1.2"},
       {:credo, "~> 1.5", only: [:dev, :test, :gha]},
       {:mock, "~> 0.3.7", only: [:test, :gha]},

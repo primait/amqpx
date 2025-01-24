@@ -41,8 +41,7 @@ defmodule Amqpx.Helper do
 
   @spec consumers_supervisor_configuration([handler_conf :: map]) :: [Supervisor.child_spec()]
   def consumers_supervisor_configuration(handlers_conf) do
-    amqp_signal_handler() ++
-      Enum.map(handlers_conf, &Supervisor.child_spec({Amqpx.Gen.Consumer, &1}, id: UUID.uuid1()))
+    Enum.map(handlers_conf, &Supervisor.child_spec({Amqpx.Gen.Consumer, &1}, id: UUID.uuid1()))
   end
 
   @spec producer_supervisor_configuration(producer_conf :: map) :: module_spec
@@ -135,7 +134,7 @@ defmodule Amqpx.Helper do
       "If x-dead-letter-exchange is an empty string, x-dead-letter-routing-key should be '#{dlq}' instead of '#{bad_dlq}'"
 
     if Enum.member?(skip_dead_letter_routing_key_check_for(), bad_dlq) do
-      Logger.warn(msg)
+      Logger.warning(msg)
     else
       raise msg
     end
@@ -247,15 +246,6 @@ defmodule Amqpx.Helper do
         Keyword.update(dlq_opts, :arguments, [queue_type], &[queue_type | &1])
     end
   end
-
-  @spec amqp_signal_handler() :: [Supervisor.child_spec()]
-  defp amqp_signal_handler,
-    do: [
-      %{
-        id: Amqpx.SignalHandler,
-        start: {Amqpx.SignalHandler, :start_link, []}
-      }
-    ]
 
   defp skip_dead_letter_routing_key_check_for,
     do: Application.get_env(:amqpx, :skip_dead_letter_routing_key_check_for, [])

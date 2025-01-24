@@ -31,7 +31,7 @@ defmodule Amqpx.Gen.Producer do
 
   # Public API
 
-  @spec start_link(opts :: map()) :: GenServer.server()
+  @spec start_link(opts :: map()) :: GenServer.on_start()
   def start_link(opts) do
     gen_server_opts =
       opts
@@ -129,7 +129,7 @@ defmodule Amqpx.Gen.Producer do
   def handle_info({:EXIT, _, :normal}, state), do: {:noreply, state}
 
   def handle_info(message, state) do
-    Logger.warn("Unknown message received #{inspect(message)}")
+    Logger.warning("Unknown message received #{inspect(message)}")
     {:noreply, state}
   end
 
