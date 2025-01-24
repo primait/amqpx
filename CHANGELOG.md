@@ -10,6 +10,63 @@ and this project adheres to
 
 ---
 
+## [7.0.0] - 2025-01-24
+
+### Changed
+
+- When you pass an `x-queue-type` to `Amqpx.Helper.declare/2` now it will be used also for the dead letter queue
+
+  This is a breaking change: if you are already using `Helper.declare` with an `x-queue-type` that is not the default type this will try to change the dead letter queue type.
+
+  In this case you can either remove the dead letter queue and recreate it with the correct type, or you can migrate to a new dead letter queue with a different name and remove the old one when it's fully drained:
+
+  ```elixir
+  queue_spec = %{
+    queue: "test_1",
+    opts: [
+      durable: true,
+      arguments: [
+        {"x-queue-type", :longstr, "quorum"},
+        {"x-dead-letter-exchange", :longstr, "test_dle"},
+        {"x-dead-letter-routing-key", :longstr, "test_rk"}
+      ]
+    ],
+    exchanges: [
+      %{name: "test_exchange", type: :topic, routing_keys: ["test_rk"], opts: [durable: true]},
+    ]
+  }
+
+  # As an example we'll take the following `Amqpx.Helper.declare`
+  # that creates a queue called `test_1` and a corresponding `test_1_errored`
+  :ok = Amqpx.Helper.declare(chan, queue_spec)
+
+  # Amqpx.Helper.setup_queue/2 takes the exact same queue_spec
+  # as declare/2 but it doesn't declare the dead letter queue
+  :ok = Amqpx.Helper.setup_queue(chan, queue_spec)
+
+  # Now we can create a new dead letter queue with type "quorum"
+  # by using a different name, we just need to make sure
+  # its routing key will match the `x-dead-letter-routing-key` argument
+  :ok = Amqpx.Helper.setup_dead_lettering(chan, %{
+    routing_key: "test_rk",
+    queue: "test_1_dlq",
+    exchange: "test_dle",
+    queue_opts: [durable: true, arguments: [{"x-queue-type", :longstr, "quorum"}]]
+  })
+
+  # At this point dead-lettered messages should be delivered to both
+  # `test_1_errored` and `test_1_dlq`, in this way we can migrate everything
+  # to the new one and as soon as it empties we can remove the old one
+  ```
+
+- The `original_routing_keys` option accepted by `Amqpx.Helper.setup_dead_lettering/2` must be a `[String.t()]`, if you are passing a `[[String.t()]]` to this function you have to pipe trough `List.flatten` now
+
+### Added
+
+- `Amqpx.Helper.setup_dead_lettering/2` now accepts a `queue_opts` key which will be used as third argument for `Amqpx.Queue.declare/3`
+
+---
+
 ## [6.1.3] - 2025-01-23
 
 ### Fixed
@@ -113,8 +170,8 @@ This is due to elixir rabbit not supporting the older versions of the libraries
 - ([#129](https://github.com/primait/amqpx/pull/)) Default binding for DLX
   queues instead of wildcard
 
-
-[Unreleased]: https://github.com/primait/amqpx/compare/6.1.3...HEAD
+[Unreleased]: https://github.com/primait/amqpx/compare/7.0.0...HEAD
+[7.0.0]: https://github.com/primait/amqpx/compare/6.1.3...7.0.0
 [6.1.3]: https://github.com/primait/amqpx/compare/6.1.2...6.1.3
 [6.1.2]: https://github.com/primait/amqpx/compare/6.1.1...6.1.2
 [6.1.1]: https://github.com/primait/amqpx/compare/6.1.0...6.1.1
