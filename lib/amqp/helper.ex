@@ -30,7 +30,7 @@ defmodule Amqpx.Helper do
           :queue => Basic.queue(),
           :exchange => Basic.exchange(),
           :routing_key => String.t(),
-          optional(:original_routing_keys) => [String.t() | [String.t()]],
+          optional(:original_routing_keys) => [String.t()],
           optional(:queue_opts) => Keyword.t()
         }
 
@@ -100,7 +100,7 @@ defmodule Amqpx.Helper do
               {:routing_key, dlrk}
 
             nil ->
-              original_routing_keys = Enum.map(exchanges, & &1.routing_keys)
+              original_routing_keys = Enum.flat_map(exchanges, & &1.routing_keys)
               {:original_routing_keys, original_routing_keys}
           end
 
@@ -154,7 +154,6 @@ defmodule Amqpx.Helper do
     Queue.declare(channel, dlq, dead_letter_queue_opts(spec))
 
     original_routing_keys
-    |> List.flatten()
     |> Enum.uniq()
     |> Enum.each(fn rk ->
       :ok = Queue.bind(channel, dlq, exchange, routing_key: rk)
