@@ -1,7 +1,7 @@
 defmodule Amqpx.MixProject do
   use Mix.Project
 
-  @version "6.1.3"
+  @version "7.0.0"
 
   def project do
     [

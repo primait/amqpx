@@ -147,6 +147,46 @@ defmodule HelperTest do
     Application.put_env(:amqpx, :skip_dead_letter_routing_key_check_for, [])
   end
 
+  test "declare/2 propagates x-queue-type to dead letter queue declaration",
+       meta do
+    queue_name = rand_name()
+    routing_key_name = rand_name()
+    exchange_name = rand_name()
+    dead_letter_queue = "#{queue_name}_errored"
+
+    assert :ok ==
+             Helper.declare(meta[:chan], %{
+               exchanges: [
+                 %{name: exchange_name, opts: [durable: true], routing_keys: [routing_key_name], type: :topic}
+               ],
+               opts: [
+                 durable: true,
+                 arguments: [
+                   {"x-dead-letter-exchange", :longstr, ""},
+                   {"x-dead-letter-routing-key", :longstr, dead_letter_queue},
+                   {"x-queue-type", :longstr, "quorum"}
+                 ]
+               ],
+               queue: queue_name
+             })
+
+    rabbit_manager = Application.get_env(:amqpx, :rabbit_manager_url).rabbit
+    amqp_conn = Application.get_env(:amqpx, :amqp_connection)
+    credentials = Base.encode64("#{amqp_conn[:username]}:#{amqp_conn[:password]}")
+    headers = [{~c"Authorization", "Basic #{credentials}"}]
+
+    assert {:ok, {{_, 200, ~c"OK"}, _headers, body}} =
+             :httpc.request(:get, {"http://#{rabbit_manager}/api/queues", headers}, [], [])
+
+    assert {:ok, queues} = Jason.decode(body)
+
+    assert %{"durable" => true, "arguments" => %{"x-queue-type" => "quorum"}} =
+             Enum.find(queues, fn q -> match?(%{"name" => ^queue_name}, q) end)
+
+    assert %{"durable" => true, "arguments" => %{"x-queue-type" => "quorum"}} =
+             Enum.find(queues, fn q -> match?(%{"name" => ^dead_letter_queue}, q) end)
+  end
+
   defp rand_name do
     :crypto.strong_rand_bytes(8) |> Base.encode64()
   end
