@@ -14,7 +14,7 @@ jobs:
     env:
       MIX_ENV: gha
     steps:
-      - uses: erlef/setup-beam@v1
+      - uses: erlef/setup-beam@5304e04ea2b355f03681464e683d92e3b2f18451 # v1.18.2
         with:
           elixir-version: 1.16
           otp-version: 26
@@ -108,6 +108,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Decide whether the needed jobs succeeded or failed
-        uses: re-actors/alls-green@release/v1
+        uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe # ratchet:re-actors/alls-green@release/v1
         with:
           jobs: ${{ toJSON(needs) }}
