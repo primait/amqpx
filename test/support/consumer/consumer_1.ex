@@ -11,7 +11,11 @@ defmodule Amqpx.Test.Support.Consumer1 do
     {:ok, %{}}
   end
 
-  def handle_message(_payload, _meta, state) do
+  def handle_message(payload, _meta, state) do
+    IO.puts("DEBUG: handle_message(#{payload})")
+    :timer.sleep(:infinity)
+    IO.puts("DEBUG: handle_message DONE")
+
     {:ok, state}
   end
 end

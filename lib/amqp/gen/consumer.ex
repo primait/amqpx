@@ -51,6 +51,8 @@ defmodule Amqpx.Gen.Consumer do
           connection_name: connection_name
         } = state
       ) do
+    IO.puts("DEBUG: handle :setup")
+
     case GenServer.call(connection_name, :get_connection) do
       nil ->
         :timer.sleep(backoff)
@@ -58,6 +60,11 @@ defmodule Amqpx.Gen.Consumer do
 
       connection ->
         {:ok, channel} = Channel.open(connection, self())
+
+        if not is_pid(channel.pid) do
+          raise "CHANNEL PID NOT FOUND"
+        end
+
         Process.monitor(channel.pid)
         state = %{state | channel: channel}
 
@@ -72,21 +79,29 @@ defmodule Amqpx.Gen.Consumer do
 
   # Confirmation sent by the broker after registering this process as a consumer
   def handle_info({:"basic.consume_ok", _consumer_tag}, state) do
+    IO.puts("DEBUG: handle :basic.consume_ok")
+
     {:noreply, state}
   end
 
   # Sent by the broker when the consumer is unexpectedly cancelled
   def handle_info({:server_cancel, {:"basic.cancel", _consumer_tag, _nowait}}, state) do
+    IO.puts("DEBUG: handle :basic.cancel")
+
     {:stop, :basic_cancel, state}
   end
 
   # Received if we call Basic.cancel
   def handle_info({:"basic.cancel", _consumer_tag, _nowait}, state) do
+    IO.puts("DEBUG: handle :basic.cancel")
+
     {:noreply, state, :hibernate}
   end
 
   # Confirmation sent by the broker to the consumer process after a Basic.cancel
   def handle_info({:"basic.cancel_ok", _consumer_tag}, state) do
+    IO.puts("DEBUG: handle :basic.cancel_ok")
+
     {:stop, {:shutdown, :basic_cancel_ok}, state}
   end
 
@@ -120,6 +135,8 @@ defmodule Amqpx.Gen.Consumer do
          )},
         state
       ) do
+    IO.puts("DEBUG: handle basic_deliver()")
+
     meta = %{
       consumer_tag: consumer_tag,
       delivery_tag: delivery_tag,
@@ -158,11 +175,15 @@ defmodule Amqpx.Gen.Consumer do
          ), _pid},
         state
       ) do
+    IO.puts("DEBUG: handle basic_consume()")
+
     {:noreply, state}
   end
 
   def handle_info({_ref, {:ok, _port, _pid}}, state) do
     Logger.debug("Amqpx socket probably restarted by underlying library")
+    IO.puts("DEBUG: Amqpx socket probably restarted by underlying library")
+
     {:noreply, state}
   end
 
@@ -170,26 +191,41 @@ defmodule Amqpx.Gen.Consumer do
 
   def handle_info({_ref, {:error, :no_socket, _pid}}, state) do
     Logger.debug("Amqpx socket not found")
+    IO.puts("DEBUG: Amqpx socket not found")
+
     {:noreply, state}
   end
 
   def handle_info({:DOWN, _, :process, _pid, reason}, state) do
     Logger.info("Monitored channel process crashed: #{inspect(reason)}. Restarting...")
+    IO.puts("DEBUG: Monitored channel process crashed: #{inspect(reason)}. Restarting...")
+
     state = %{state | channel: nil}
     {:stop, :channel_exited, state}
   end
 
-  def handle_info({:EXIT, _, :normal}, state), do: {:noreply, state}
+  def handle_info({:EXIT, _, :normal}, state) do
+    IO.puts("DEBUG: {:EXIT, _, :normal}")
 
-  def handle_info(message, state) do
-    Logger.warning("Unknown message received #{inspect(message)}")
     {:noreply, state}
   end
 
-  def terminate(_, %__MODULE__{channel: nil}), do: nil
+  def handle_info(message, state) do
+    Logger.warning("Unknown message received #{inspect(message)}")
+    IO.puts("DEBUG: Unknown message received #{inspect(message)}")
+
+    {:noreply, state}
+  end
+
+  def terminate(_, %__MODULE__{channel: nil}) do
+    IO.puts("DEBUG: terminate channel: nil")
+
+    nil
+  end
 
   def terminate(reason, %__MODULE__{channel: channel}) do
     Logger.info("Terminating consumer with reason #{inspect(reason)}")
+    IO.puts("DEBUG: Terminating consumer with reason #{inspect(reason)}")
 
     case reason do
       :normal -> close_channel(channel)
@@ -202,6 +238,8 @@ defmodule Amqpx.Gen.Consumer do
   # Private functions
 
   defp close_channel(%{pid: pid} = channel) do
+    IO.puts("DEBUG: close_channel()")
+
     if Process.alive?(pid) do
       Channel.close(channel)
 
@@ -222,6 +260,8 @@ defmodule Amqpx.Gen.Consumer do
            requeue_on_reject: requeue_on_reject
          } = state
        ) do
+    IO.puts("DEBUG: handle_message()")
+
     case handle_signals(state, consumer_tag) do
       {:ok, state} ->
         {:ok, handler_state} = handler_module.handle_message(message, meta, handler_state)
@@ -233,6 +273,8 @@ defmodule Amqpx.Gen.Consumer do
     end
   rescue
     e in _ ->
+      IO.puts("DEBUG: handle_message() rescue")
+
       Logger.error(Exception.format(:error, e, __STACKTRACE__))
 
       Task.start(fn ->

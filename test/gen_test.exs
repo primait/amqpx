@@ -18,6 +18,44 @@ defmodule Amqpx.Test.AmqpxTest do
   @moduletag capture_log: true
   @start_supervised_timeout 20
 
+  @tag timeout: :infinity
+  test "delivery acknowledgement timeout" do
+    start_connection1!()
+    start_consumer_by_name!(Consumer1)
+    start_producer!(:producer)
+
+    consumer = Process.whereis(:consumer_1)
+    %Amqpx.Gen.Consumer{connection_name: conn_name, channel: chan} = :sys.get_state(consumer)
+    conn = GenServer.call(conn_name, :get_connection)
+
+    Process.monitor(chan.pid)
+
+    payload = %{test: 1}
+    Producer1.send_payload(payload)
+
+    for _ <- 1..1_000 do
+      if not Process.alive?(consumer) do
+        IO.puts("\nDEBUG: consumer died")
+      end
+
+      if not Process.alive?(conn.pid) do
+        IO.puts("\nDEBUG: connection died")
+      end
+
+      if not Process.alive?(chan.pid) do
+        IO.puts("\nDEBUG: channel died")
+      end
+
+      receive do
+        msg -> IO.puts("DEBUG: got message #{inspect(msg)}")
+      end
+
+      IO.write(".")
+
+      :timer.sleep(1_000)
+    end
+  end
+
   test "e2e: should publish message and consume it" do
     start_connection1!()
     start_consumer_by_name!(Consumer1)

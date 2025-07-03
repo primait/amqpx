@@ -32,6 +32,7 @@ config :amqpx,
 config :amqpx,
   consumers: [
     %{
+      name: :consumer_1,
       handler_module: Amqpx.Test.Support.Consumer1
     },
     %{
@@ -65,7 +66,8 @@ config :amqpx, Amqpx.Test.Support.Consumer1, %{
     durable: true,
     arguments: [
       {"x-dead-letter-routing-key", :longstr, "test1_errored"},
-      {"x-dead-letter-exchange", :longstr, "test1_errored_exchange"}
+      {"x-dead-letter-exchange", :longstr, "test1_errored_exchange"},
+      {"x-consumer-timeout", :long, 10}
     ]
   ]
 }
