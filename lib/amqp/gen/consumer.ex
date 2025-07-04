@@ -11,6 +11,7 @@ defmodule Amqpx.Gen.Consumer do
     :channel,
     :handler_module,
     :handler_state,
+    :handler_task,
     prefetch_count: 50,
     backoff: 5_000,
     connection_name: Amqpx.Gen.ConnectionManager,
@@ -166,6 +167,25 @@ defmodule Amqpx.Gen.Consumer do
     {:noreply, state}
   end
 
+  def handle_info({ref, reply}, %__MODULE__{handler_task: %Task{ref: ref}} = state) do
+    case reply do
+      {tag, {:ok, handler_state}} ->
+        Basic.ack(state.channel, tag)
+
+        {:noreply, %{state | handler_state: handler_state, handler_task: nil}}
+
+      {_tag, {:error, reason}} ->
+        raise "Got an error from handle_message: #{inspect(reason)}"
+
+      _ ->
+        raise "Got a weird response from handle_message: #{inspect(reply)}"
+    end
+  end
+
+  def handle_info({:DOWN, ref, _, _, reason}, %__MODULE__{handler_task: %Task{ref: ref}}) do
+    raise "Got an error during handle_message execution: #{inspect(reason)}"
+  end
+
   # Error handling
 
   def handle_info({_ref, {:error, :no_socket, _pid}}, state) do
@@ -224,9 +244,12 @@ defmodule Amqpx.Gen.Consumer do
        ) do
     case handle_signals(state, consumer_tag) do
       {:ok, state} ->
-        {:ok, handler_state} = handler_module.handle_message(message, meta, handler_state)
-        Basic.ack(state.channel, tag)
-        %{state | handler_state: handler_state}
+        handler_task =
+          Task.async(fn ->
+            {tag, handler_module.handle_message(message, meta, handler_state)}
+          end)
+
+        %{state | handler_task: handler_task}
 
       {:stop, state} ->
         state
