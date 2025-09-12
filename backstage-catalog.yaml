@@ -1,0 +1,17 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+spec:
+  type: service
+  lifecycle: production
+  owner: team-developer-experience
+  system: prima.it
+  dependsOn: []
+metadata:
+  name: amqpx
+  description: Elixir AMQP client
+  tags:
+    - elixir
+    - rabbitmq
+  links: []
+  # annotations:
+  #  backstage.io/techdocs-ref: dir:.
