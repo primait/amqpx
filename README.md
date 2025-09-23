@@ -92,6 +92,8 @@ Default parameters:
 
 - prefetch_count: 50
 - backoff: 5_000 (connection retry)
+- requeue_on_reject: true
+- concurrency_level: 1 (requires Amqpx.Helper)
 
 WARNING: headers exchange binding not supported by library helpers functions
 

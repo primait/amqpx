@@ -41,7 +41,9 @@ defmodule Amqpx.Helper do
 
   @spec consumers_supervisor_configuration([handler_conf :: map]) :: [Supervisor.child_spec()]
   def consumers_supervisor_configuration(handlers_conf) do
-    Enum.map(handlers_conf, &Supervisor.child_spec({Amqpx.Gen.Consumer, &1}, id: UUID.uuid1()))
+    handlers_conf
+    |> Enum.flat_map(&duplicate_concurrent_consumers/1)
+    |> Enum.map(&Supervisor.child_spec({Amqpx.Gen.Consumer, &1}, id: UUID.uuid1()))
   end
 
   @spec producer_supervisor_configuration(producer_conf :: map) :: module_spec
@@ -248,4 +250,10 @@ defmodule Amqpx.Helper do
 
   defp skip_dead_letter_routing_key_check_for,
     do: Application.get_env(:amqpx, :skip_dead_letter_routing_key_check_for, [])
+
+  @spec duplicate_concurrent_consumers(map) :: [map]
+  defp duplicate_concurrent_consumers(conf) do
+    {concurrency_level, conf} = Map.pop(conf, :concurrency_level, 1)
+    List.duplicate(conf, concurrency_level)
+  end
 end

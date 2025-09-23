@@ -10,6 +10,41 @@ and this project adheres to
 
 ---
 
+## [7.1.0] - 2025-09-22
+
+### Added
+
+- `Amqpx.Helper.consumers_supervisor_configuration/1` now accepts an optional `concurrency_level` key in consumers configuration that can be used to spawn multiple competing consumers on the same queue.
+
+  ```elixir
+  config :myapp,
+  consumers: [
+    %{
+      handler_module: Myapp.Consumer,
+      prefetch_count: 100,
+      backoff: 10_000,
+      concurrency_level: 2  # <-- New!
+    }
+  ]
+
+  # It's equivalent to
+  config :myapp,
+  consumers: [
+    %{
+      handler_module: Myapp.Consumer,
+      prefetch_count: 100,
+      backoff: 10_000
+    },
+    %{
+      handler_module: Myapp.Consumer,
+      prefetch_count: 100,
+      backoff: 10_000
+    }
+  ]
+  ```
+
+---
+
 ## [7.0.0] - 2025-01-24
 
 ### Changed
@@ -170,7 +205,9 @@ This is due to elixir rabbit not supporting the older versions of the libraries
 - ([#129](https://github.com/primait/amqpx/pull/)) Default binding for DLX
   queues instead of wildcard
 
-[Unreleased]: https://github.com/primait/amqpx/compare/7.0.0...HEAD
+
+[Unreleased]: https://github.com/primait/amqpx/compare/7.1.0...HEAD
+[7.1.0]: https://github.com/primait/amqpx/compare/7.0.0...7.1.0
 [7.0.0]: https://github.com/primait/amqpx/compare/6.1.3...7.0.0
 [6.1.3]: https://github.com/primait/amqpx/compare/6.1.2...6.1.3
 [6.1.2]: https://github.com/primait/amqpx/compare/6.1.1...6.1.2

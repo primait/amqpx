@@ -187,6 +187,29 @@ defmodule HelperTest do
              Enum.find(queues, fn q -> match?(%{"name" => ^dead_letter_queue}, q) end)
   end
 
+  test "consumers_supervisor_configuration/1 duplicates the configuration based on concurrency_level" do
+    confs = [
+      %{concurrency_level: 2, my_conf: :concurrent_conf},
+      %{my_conf: :normal_conf}
+    ]
+
+    specs = Helper.consumers_supervisor_configuration(confs)
+
+    # Configs are duplicated according to concurrency_level
+    actual_confs = Enum.map(specs, fn %{start: {Amqpx.Gen.Consumer, :start_link, [conf]}} -> conf.my_conf end)
+    assert actual_confs == [:concurrent_conf, :concurrent_conf, :normal_conf]
+
+    # They all have different ids
+    unique_ids = specs |> Enum.map(& &1.id) |> Enum.uniq()
+    assert length(unique_ids) == 3
+  end
+
+  test "consumers_supervisor_configuration/1 raises if concurrency_level is not a positive integer" do
+    conf = %{concurrency_level: -2, my_conf: :negative_conf}
+
+    assert_raise FunctionClauseError, fn -> Helper.consumers_supervisor_configuration([conf]) end
+  end
+
   defp rand_name do
     :crypto.strong_rand_bytes(8) |> Base.encode64()
   end
