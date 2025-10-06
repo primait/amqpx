@@ -306,6 +306,8 @@ defmodule Amqpx.Gen.Producer do
          },
          options
        ) do
+    options = Keyword.update(options, :headers, [], &Amqpx.OpenTelemetry.inject_trace_propagation_headers/1)
+
     with :ok <-
            Basic.publish(
              channel,
