@@ -215,7 +215,7 @@ defmodule Amqpx.Gen.Consumer do
 
   defp handle_message(
          message,
-         %{delivery_tag: tag, redelivered: redelivered, consumer_tag: consumer_tag} = meta,
+         %{delivery_tag: tag, redelivered: redelivered, consumer_tag: consumer_tag, headers: headers} = meta,
          %__MODULE__{
            handler_module: handler_module,
            handler_state: handler_state,
@@ -223,7 +223,9 @@ defmodule Amqpx.Gen.Consumer do
            requeue_on_reject: requeue_on_reject
          } = state
        ) do
-    Amqpx.OpenTelemetry.with_span :handle_message do
+    headers = if headers != :undefined, do: headers, else: []
+
+    Amqpx.OpenTelemetry.with_span :handle_message, %{}, headers do
       try do
         case handle_signals(state, consumer_tag) do
           {:ok, state} ->

@@ -7,12 +7,13 @@ defmodule Amqpx.OpenTelemetry do
 
     defmacro with_span(name, trace_propagation_carrier \\ quote(do: []), start_opts \\ quote(do: %{}), do: block) do
       quote do
+        alias OpenTelemetry.Ctx
         require OpenTelemetry.Tracer, as: Tracer
 
         links =
-          OpenTelemetry.Ctx.new()
+          Ctx.new()
           |> :otel_propagator_text_map.extract_to(unquote(trace_propagation_carrier))
-          |> OpenTelemetry.Tracer.current_span_ctx()
+          |> Tracer.current_span_ctx()
           |> OpenTelemetry.link()
           |> List.wrap()
 
