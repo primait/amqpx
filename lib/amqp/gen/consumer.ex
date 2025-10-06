@@ -6,6 +6,7 @@ defmodule Amqpx.Gen.Consumer do
   use GenServer
   import Amqpx.Core
   alias Amqpx.{Basic, Channel, SignalHandler}
+  require Amqpx.OpenTelemetry
 
   defstruct [
     :channel,
@@ -222,34 +223,38 @@ defmodule Amqpx.Gen.Consumer do
            requeue_on_reject: requeue_on_reject
          } = state
        ) do
-    case handle_signals(state, consumer_tag) do
-      {:ok, state} ->
-        {:ok, handler_state} = handler_module.handle_message(message, meta, handler_state)
-        Basic.ack(state.channel, tag)
-        %{state | handler_state: handler_state}
+    Amqpx.OpenTelemetry.with_span :handle_message do
+      try do
+        case handle_signals(state, consumer_tag) do
+          {:ok, state} ->
+            {:ok, handler_state} = handler_module.handle_message(message, meta, handler_state)
+            Basic.ack(state.channel, tag)
+            %{state | handler_state: handler_state}
 
-      {:stop, state} ->
-        state
-    end
-  rescue
-    e in _ ->
-      Logger.error(Exception.format(:error, e, __STACKTRACE__))
-
-      Task.start(fn ->
-        :timer.sleep(backoff)
-
-        is_message_to_reject =
-          function_exported?(handler_module, :handle_message_rejection, 2) &&
-            (!requeue_on_reject || (redelivered && requeue_on_reject))
-
-        if is_message_to_reject do
-          handler_module.handle_message_rejection(message, e)
+          {:stop, state} ->
+            state
         end
+      rescue
+        e in _ ->
+          Logger.error(Exception.format(:error, e, __STACKTRACE__))
 
-        Basic.reject(state.channel, tag, requeue: requeue_on_reject && !redelivered)
-      end)
+          Amqpx.OpenTelemetry.start_task(fn ->
+            :timer.sleep(backoff)
 
-      state
+            is_message_to_reject =
+              function_exported?(handler_module, :handle_message_rejection, 2) &&
+                (!requeue_on_reject || (redelivered && requeue_on_reject))
+
+            if is_message_to_reject do
+              handler_module.handle_message_rejection(message, e)
+            end
+
+            Basic.reject(state.channel, tag, requeue: requeue_on_reject && !redelivered)
+          end)
+
+          state
+      end
+    end
   end
 
   @type signal_status :: :running | :draining | :stopping
