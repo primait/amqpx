@@ -4,7 +4,7 @@ defmodule Amqpx.Gen.Producer do
   """
   require Logger
   use GenServer
-  alias Amqpx.{Backoff.Jittered, Basic, Channel, Confirm, Helper}
+  alias Amqpx.{Backoff.Jittered, Basic, Channel, Confirm, Helper, OpenTelemetry}
 
   @type state() :: %__MODULE__{}
 
@@ -306,7 +306,7 @@ defmodule Amqpx.Gen.Producer do
          },
          options
        ) do
-    options = Keyword.update(options, :headers, [], &Amqpx.OpenTelemetry.inject_trace_propagation_headers/1)
+    options = Keyword.update(options, :headers, [], &OpenTelemetry.inject_trace_propagation_headers/1)
 
     with :ok <-
            Basic.publish(

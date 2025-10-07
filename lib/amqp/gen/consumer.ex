@@ -6,7 +6,7 @@ defmodule Amqpx.Gen.Consumer do
   use GenServer
   import Amqpx.Core
   alias Amqpx.{Basic, Channel, SignalHandler}
-  require Amqpx.OpenTelemetry
+  require Amqpx.OpenTelemetry, as: OpenTelemetry
 
   defstruct [
     :channel,
@@ -215,7 +215,11 @@ defmodule Amqpx.Gen.Consumer do
 
   defp handle_message(
          message,
-         %{delivery_tag: tag, redelivered: redelivered, consumer_tag: consumer_tag, headers: headers} = meta,
+         %{
+           delivery_tag: tag,
+           redelivered: redelivered,
+           consumer_tag: consumer_tag,
+         } = meta,
          %__MODULE__{
            handler_module: handler_module,
            handler_state: handler_state,
@@ -223,9 +227,9 @@ defmodule Amqpx.Gen.Consumer do
            requeue_on_reject: requeue_on_reject
          } = state
        ) do
-    headers = if headers != :undefined, do: headers, else: []
+    headers = headers(meta)
 
-    Amqpx.OpenTelemetry.with_span :handle_message, %{}, headers do
+    OpenTelemetry.with_span :handle_message, %{}, headers do
       try do
         case handle_signals(state, consumer_tag) do
           {:ok, state} ->
@@ -240,7 +244,7 @@ defmodule Amqpx.Gen.Consumer do
         e in _ ->
           Logger.error(Exception.format(:error, e, __STACKTRACE__))
 
-          Amqpx.OpenTelemetry.start_task(fn ->
+          OpenTelemetry.start_task(fn ->
             :timer.sleep(backoff)
 
             is_message_to_reject =
@@ -283,4 +287,7 @@ defmodule Amqpx.Gen.Consumer do
 
   # No signals received run as normal
   defp handle_signals(:running, state, _), do: {:ok, state}
+
+  defp headers(%{headers: headers}) when is_list(headers), do: headers
+  defp headers(_), do: []
 end
