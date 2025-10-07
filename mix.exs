@@ -58,8 +58,8 @@ defmodule Amqpx.MixProject do
       {:rabbit_common, "~> 4.0"},
       {:elixir_uuid, "~> 1.2"},
 
-      {:opentelemetry_api, "~> 1.4", optional: true},
-      {:opentelemetry_semantic_conventions, "~> 1.27", optional: true},
+      {:opentelemetry_api, "~> 1.4"},
+      {:opentelemetry_semantic_conventions, "~> 1.27"},
 
       {:credo, "~> 1.5", only: [:dev, :test, :gha]},
       {:mock, "~> 0.3.7", only: [:test, :gha]},

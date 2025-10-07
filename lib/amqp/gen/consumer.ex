@@ -6,7 +6,9 @@ defmodule Amqpx.Gen.Consumer do
   use GenServer
   import Amqpx.Core
   alias Amqpx.{Basic, Channel, SignalHandler}
-  require Amqpx.OpenTelemetry, as: OpenTelemetry
+
+  alias OpenTelemetry.Ctx
+  require OpenTelemetry.Tracer, as: Tracer
 
   defstruct [
     :channel,
@@ -229,7 +231,14 @@ defmodule Amqpx.Gen.Consumer do
        ) do
     headers = headers(meta)
 
-    OpenTelemetry.with_span :handle_message, %{}, headers do
+    links =
+      Ctx.new()
+      |> :otel_propagator_text_map.extract_to(headers)
+      |> Tracer.current_span_ctx()
+      |> OpenTelemetry.link()
+      |> List.wrap()
+
+    Tracer.with_span :"handle message", %{links: links} do
       try do
         case handle_signals(state, consumer_tag) do
           {:ok, state} ->
@@ -245,20 +254,24 @@ defmodule Amqpx.Gen.Consumer do
           e = Exception.normalize(:error, e)
 
           Logger.error(Exception.format(:error, e, __STACKTRACE__))
-          OpenTelemetry.set_status(:error, Exception.message(e))
+          Tracer.set_status(:error, Exception.message(e))
 
-          OpenTelemetry.start_task(fn ->
-            :timer.sleep(backoff)
+          ctx = Ctx.get_current()
 
-            is_message_to_reject =
-              function_exported?(handler_module, :handle_message_rejection, 2) &&
-                (!requeue_on_reject || (redelivered && requeue_on_reject))
+          Task.start(fn ->
+            Tracer.with_span ctx, "handle message rejection", %{} do
+              :timer.sleep(backoff)
 
-            if is_message_to_reject do
-              handler_module.handle_message_rejection(message, e)
+              is_message_to_reject =
+                function_exported?(handler_module, :handle_message_rejection, 2) &&
+                  (!requeue_on_reject || (redelivered && requeue_on_reject))
+
+              if is_message_to_reject do
+                handler_module.handle_message_rejection(message, e)
+              end
+
+              Basic.reject(state.channel, tag, requeue: requeue_on_reject && !redelivered)
             end
-
-            Basic.reject(state.channel, tag, requeue: requeue_on_reject && !redelivered)
           end)
 
           state

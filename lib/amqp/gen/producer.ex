@@ -3,9 +3,9 @@ defmodule Amqpx.Gen.Producer do
   Generic implementation of amqp producer
   """
   require Logger
+  require OpenTelemetry.Tracer, as: Tracer
   use GenServer
-  require Amqpx.OpenTelemetry
-  alias Amqpx.{Backoff.Jittered, Basic, Channel, Confirm, Helper, OpenTelemetry}
+  alias Amqpx.{Backoff.Jittered, Basic, Channel, Confirm, Helper}
 
   @type state() :: %__MODULE__{}
 
@@ -159,7 +159,7 @@ defmodule Amqpx.Gen.Producer do
           publish_retry_options: publish_retry_options
         } = state
       ) do
-    OpenTelemetry.with_span :"publish message" do
+    Tracer.with_span :"publish message" do
       retry_policy = Keyword.get(publish_retry_options, :retry_policy, %{})
       max_retries = Keyword.get(publish_retry_options, :max_retries, @default_max_retries)
       backoff = Keyword.get(publish_retry_options, :backoff, @default_backoff)
@@ -309,7 +309,7 @@ defmodule Amqpx.Gen.Producer do
          },
          options
        ) do
-    options = Keyword.update(options, :headers, [], &OpenTelemetry.inject_trace_propagation_headers/1)
+    options = Keyword.update(options, :headers, [], &:otel_propagator_text_map.inject/1)
 
     with :ok <-
            Basic.publish(
