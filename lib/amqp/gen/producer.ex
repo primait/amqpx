@@ -4,6 +4,7 @@ defmodule Amqpx.Gen.Producer do
   """
   require Logger
   use GenServer
+  require Amqpx.OpenTelemetry
   alias Amqpx.{Backoff.Jittered, Basic, Channel, Confirm, Helper, OpenTelemetry}
 
   @type state() :: %__MODULE__{}
@@ -158,43 +159,45 @@ defmodule Amqpx.Gen.Producer do
           publish_retry_options: publish_retry_options
         } = state
       ) do
-    retry_policy = Keyword.get(publish_retry_options, :retry_policy, %{})
-    max_retries = Keyword.get(publish_retry_options, :max_retries, @default_max_retries)
-    backoff = Keyword.get(publish_retry_options, :backoff, @default_backoff)
+    OpenTelemetry.with_span :"publish message" do
+      retry_policy = Keyword.get(publish_retry_options, :retry_policy, %{})
+      max_retries = Keyword.get(publish_retry_options, :max_retries, @default_max_retries)
+      backoff = Keyword.get(publish_retry_options, :backoff, @default_backoff)
 
-    publish_options = %{
-      publisher_confirms: publisher_confirms,
-      publish_timeout: publish_timeout,
-      max_retries: max_retries,
-      retry_policy: retry_policy,
-      backoff: backoff
-    }
+      publish_options = %{
+        publisher_confirms: publisher_confirms,
+        publish_timeout: publish_timeout,
+        max_retries: max_retries,
+        retry_policy: retry_policy,
+        backoff: backoff
+      }
 
-    result =
-      case retry_policy do
-        [] ->
-          do_publish(
-            channel,
-            exchange,
-            routing_key,
-            payload,
-            publish_options,
-            Keyword.merge([persistent: true], options)
-          )
+      result =
+        case retry_policy do
+          [] ->
+            do_publish(
+              channel,
+              exchange,
+              routing_key,
+              payload,
+              publish_options,
+              Keyword.merge([persistent: true], options)
+            )
 
-        _any ->
-          do_retry_publish(
-            channel,
-            exchange,
-            routing_key,
-            payload,
-            retry_attempt,
-            publish_options,
-            Keyword.merge([persistent: true], options)
-          )
-      end
+          _any ->
+            do_retry_publish(
+              channel,
+              exchange,
+              routing_key,
+              payload,
+              retry_attempt,
+              publish_options,
+              Keyword.merge([persistent: true], options)
+            )
+        end
 
-    handle_publish_result(result, state)
+      handle_publish_result(result, state)
+    end
   end
 
   # Private functions

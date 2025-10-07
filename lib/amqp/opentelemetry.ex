@@ -40,7 +40,7 @@ defmodule Amqpx.OpenTelemetry do
     end
 
     def set_status(status, error) do
-      Tracer.set_status(status, Exception.message(error))
+      Tracer.set_status(status, error)
       nil
     end
 
