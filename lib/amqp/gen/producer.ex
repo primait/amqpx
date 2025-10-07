@@ -162,7 +162,7 @@ defmodule Amqpx.Gen.Producer do
       ) do
     Tracer.with_span :"publish message", %{
       attributes: [
-        {MessagingAttributes.messaging_operation_type(), MessagingAttributes.messaging_operation_type_values.create},
+        {MessagingAttributes.messaging_operation_type(), MessagingAttributes.messaging_operation_type_values().create},
         {MessagingAttributes.messaging_destination_name(), "#{exchange}:#{routing_key}"},
         {MessagingAttributes.messaging_rabbitmq_destination_routing_key(), routing_key}
       ]
@@ -316,7 +316,10 @@ defmodule Amqpx.Gen.Producer do
          },
          options
        ) do
-    options = Keyword.update(options, :headers, [], &:otel_propagator_text_map.inject/1)
+    options =
+      options
+      |> Keyword.put_new(:headers, [])
+      |> Keyword.update!(:headers, &:otel_propagator_text_map.inject/1)
 
     with :ok <-
            Basic.publish(

@@ -5,7 +5,7 @@ defmodule Amqpx.Gen.Consumer do
   require Logger
   use GenServer
   import Amqpx.Core
-  alias Amqpx.{Basic, Channel, SignalHandler}
+  alias Amqpx.{Basic, Channel, SignalHandler, Utils}
 
   alias OpenTelemetry.{Ctx, SemConv.Incubating.MessagingAttributes}
   require OpenTelemetry.Tracer, as: Tracer
@@ -317,6 +317,6 @@ defmodule Amqpx.Gen.Consumer do
   # No signals received run as normal
   defp handle_signals(:running, state, _), do: {:ok, state}
 
-  defp headers(%{headers: headers}) when is_list(headers), do: headers
+  defp headers(%{headers: headers}) when is_list(headers), do: Enum.map(headers, &Utils.unwrap_type_tuple/1)
   defp headers(_), do: []
 end

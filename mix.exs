@@ -61,6 +61,7 @@ defmodule Amqpx.MixProject do
       {:opentelemetry_api, "~> 1.4"},
       {:opentelemetry_semantic_conventions, "~> 1.27"},
 
+      {:opentelemetry, "~> 1.4", only: [:test, :gha]},
       {:credo, "~> 1.5", only: [:dev, :test, :gha]},
       {:mock, "~> 0.3.7", only: [:test, :gha]},
       {:dialyxir, "~> 1.1", only: [:dev, :test, :gha], runtime: false},

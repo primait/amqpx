@@ -24,4 +24,8 @@ defmodule Amqpx.Utils do
   def to_type_tuple({name, value}) when is_float(value) do
     to_type_tuple({name, :float, value})
   end
+
+  def unwrap_type_tuple({name, _, value}) do
+    {name, value}
+  end
 end
