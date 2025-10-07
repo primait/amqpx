@@ -218,7 +218,7 @@ defmodule Amqpx.Gen.Consumer do
          %{
            delivery_tag: tag,
            redelivered: redelivered,
-           consumer_tag: consumer_tag,
+           consumer_tag: consumer_tag
          } = meta,
          %__MODULE__{
            handler_module: handler_module,
@@ -242,7 +242,10 @@ defmodule Amqpx.Gen.Consumer do
         end
       rescue
         e in _ ->
+          e = Exception.normalize(:error, e)
+
           Logger.error(Exception.format(:error, e, __STACKTRACE__))
+          OpenTelemetry.set_status(:error, Exception.message(e))
 
           OpenTelemetry.start_task(fn ->
             :timer.sleep(backoff)

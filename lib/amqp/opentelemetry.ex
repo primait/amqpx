@@ -39,6 +39,11 @@ defmodule Amqpx.OpenTelemetry do
       end)
     end
 
+    def set_status(status, error) do
+      Tracer.set_status(status, Exception.message(error))
+      nil
+    end
+
     def inject_trace_propagation_headers(carrier) do
       :otel_propagator_text_map.inject(carrier)
     end
@@ -48,6 +53,8 @@ defmodule Amqpx.OpenTelemetry do
     def start_task(fun) do
       Task.start(fun)
     end
+
+    def set_status(_, _), do: nil
 
     def inject_trace_propagation_headers(carrier) do
       carrier
