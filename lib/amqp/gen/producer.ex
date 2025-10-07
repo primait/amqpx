@@ -6,6 +6,7 @@ defmodule Amqpx.Gen.Producer do
   require OpenTelemetry.Tracer, as: Tracer
   use GenServer
   alias Amqpx.{Backoff.Jittered, Basic, Channel, Confirm, Helper}
+  alias OpenTelemetry.SemConv.Incubating.MessagingAttributes
 
   @type state() :: %__MODULE__{}
 
@@ -159,7 +160,13 @@ defmodule Amqpx.Gen.Producer do
           publish_retry_options: publish_retry_options
         } = state
       ) do
-    Tracer.with_span :"publish message" do
+    Tracer.with_span :"publish message", %{
+      attributes: [
+        {MessagingAttributes.messaging_operation_type(), MessagingAttributes.messaging_operation_type_values.create},
+        {MessagingAttributes.messaging_destination_name(), "#{exchange}:#{routing_key}"},
+        {MessagingAttributes.messaging_rabbitmq_destination_routing_key(), routing_key}
+      ]
+    } do
       retry_policy = Keyword.get(publish_retry_options, :retry_policy, %{})
       max_retries = Keyword.get(publish_retry_options, :max_retries, @default_max_retries)
       backoff = Keyword.get(publish_retry_options, :backoff, @default_backoff)
