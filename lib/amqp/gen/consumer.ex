@@ -7,7 +7,7 @@ defmodule Amqpx.Gen.Consumer do
   import Amqpx.Core
   alias Amqpx.{Basic, Channel, SignalHandler}
 
-  alias OpenTelemetry.Ctx
+  alias OpenTelemetry.{Ctx, SemConv.Incubating.MessagingAttributes}
   require OpenTelemetry.Tracer, as: Tracer
 
   defstruct [
@@ -218,6 +218,8 @@ defmodule Amqpx.Gen.Consumer do
   defp handle_message(
          message,
          %{
+           message_id: message_id,
+           correlation_id: correlation_id,
            delivery_tag: tag,
            redelivered: redelivered,
            consumer_tag: consumer_tag
@@ -238,7 +240,18 @@ defmodule Amqpx.Gen.Consumer do
       |> OpenTelemetry.link()
       |> List.wrap()
 
-    Tracer.with_span :"handle message", %{links: links} do
+    Tracer.with_span :"handle message", %{
+      links: links,
+      attributes: [
+        {MessagingAttributes.messaging_system(), "rabbitmq"},
+        {MessagingAttributes.messaging_message_id(), message_id},
+        {
+          MessagingAttributes.messaging_operation_type(),
+          MessagingAttributes.messaging_operation_type_values().process
+        },
+        {MessagingAttributes.messaging_message_conversation_id(), correlation_id}
+      ]
+    } do
       try do
         case handle_signals(state, consumer_tag) do
           {:ok, state} ->
@@ -259,7 +272,7 @@ defmodule Amqpx.Gen.Consumer do
           ctx = Ctx.get_current()
 
           Task.start(fn ->
-            Tracer.with_span ctx, "handle message rejection", %{} do
+            Tracer.with_span ctx, "reprocess message after rejection", %{} do
               :timer.sleep(backoff)
 
               is_message_to_reject =
