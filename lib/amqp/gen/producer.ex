@@ -161,6 +161,7 @@ defmodule Amqpx.Gen.Producer do
         } = state
       ) do
     Tracer.with_span :"publish message", %{
+      kind: :producer,
       attributes: [
         {
           MessagingAttributes.messaging_operation_type(),

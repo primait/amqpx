@@ -243,6 +243,7 @@ defmodule Amqpx.Gen.Consumer do
 
     Tracer.with_span :"handle message", %{
       links: links,
+      kind: :consumer,
       attributes: [
         {MessagingAttributes.messaging_system(), "rabbitmq"},
         {MessagingAttributes.messaging_message_id(), message_id},
