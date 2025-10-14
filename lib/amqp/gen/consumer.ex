@@ -222,7 +222,8 @@ defmodule Amqpx.Gen.Consumer do
            correlation_id: correlation_id,
            delivery_tag: tag,
            redelivered: redelivered,
-           consumer_tag: consumer_tag
+           consumer_tag: consumer_tag,
+           routing_key: routing_key
          } = meta,
          %__MODULE__{
            handler_module: handler_module,
@@ -249,7 +250,9 @@ defmodule Amqpx.Gen.Consumer do
           MessagingAttributes.messaging_operation_type(),
           MessagingAttributes.messaging_operation_type_values().process
         },
-        {MessagingAttributes.messaging_message_conversation_id(), correlation_id}
+        {MessagingAttributes.messaging_message_conversation_id(), correlation_id},
+        {MessagingAttributes.messaging_rabbitmq_destination_routing_key(), routing_key},
+        {MessagingAttributes.messaging_rabbitmq_message_delivery_tag(), tag}
       ]
     } do
       try do
