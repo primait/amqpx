@@ -32,7 +32,7 @@ defmodule Amqpx.Test.OpentelemetryTest do
       assert_called(Consumer1.handle_message(Jason.encode!(payload), :_, :_))
     end
 
-    assert_receive {:span, span(name: :"handle message")},
+    assert_receive {:span, span(name: :"handle amqp message")},
                    5000
   end
 
@@ -51,7 +51,7 @@ defmodule Amqpx.Test.OpentelemetryTest do
       assert_called(Consumer1.handle_message(Jason.encode!(payload), :_, :_))
     end
 
-    assert_receive {:span, span(name: :"publish message")},
+    assert_receive {:span, span(name: :"publish amqp message")},
                    5000
   end
 
@@ -72,7 +72,7 @@ defmodule Amqpx.Test.OpentelemetryTest do
 
     assert_receive {:span,
                     span(
-                      name: :"publish message",
+                      name: :"publish amqp message",
                       trace_id: parent_trace_id,
                       span_id: parent_span_id
                     )},
@@ -80,7 +80,7 @@ defmodule Amqpx.Test.OpentelemetryTest do
 
     assert_receive {:span,
                     span(
-                      name: :"handle message",
+                      name: :"handle amqp message",
                       links:
                         {_, _, _, _, _,
                          [

@@ -241,7 +241,7 @@ defmodule Amqpx.Gen.Consumer do
       |> OpenTelemetry.link()
       |> List.wrap()
 
-    Tracer.with_span :"handle message", %{
+    Tracer.with_span :"handle amqp message", %{
       links: links,
       kind: :consumer,
       attributes: [

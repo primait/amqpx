@@ -160,7 +160,7 @@ defmodule Amqpx.Gen.Producer do
           publish_retry_options: publish_retry_options
         } = state
       ) do
-    Tracer.with_span :"publish message", %{
+    Tracer.with_span :"publish amqp message", %{
       kind: :producer,
       attributes: [
         {
