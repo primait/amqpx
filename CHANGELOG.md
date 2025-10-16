@@ -8,6 +8,10 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Opentelemetry instrumentation
+
 ---
 
 ## [7.1.0] - 2025-09-22
