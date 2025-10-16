@@ -1,7 +1,7 @@
 defmodule Amqpx.MixProject do
   use Mix.Project
 
-  @version "7.1.0"
+  @version "7.2.0"
 
   def project do
     [
@@ -57,6 +57,11 @@ defmodule Amqpx.MixProject do
       {:amqp_client, "~> 4.0"},
       {:rabbit_common, "~> 4.0"},
       {:elixir_uuid, "~> 1.2"},
+
+      {:opentelemetry_api, "~> 1.4"},
+      {:opentelemetry_semantic_conventions, "~> 1.27"},
+
+      {:opentelemetry, "~> 1.4", only: [:test, :gha]},
       {:credo, "~> 1.5", only: [:dev, :test, :gha]},
       {:mock, "~> 0.3.7", only: [:test, :gha]},
       {:dialyxir, "~> 1.1", only: [:dev, :test, :gha], runtime: false},

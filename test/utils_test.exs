@@ -16,4 +16,9 @@ defmodule UtilsTest do
     assert Utils.to_type_tuple(test: 1.0) == [{"test", :float, 1.0}]
     assert Utils.to_type_tuple(test: :me) == [{"test", :longstr, "me"}]
   end
+
+  test "unwraps type tuples correctly" do
+    assert Utils.unwrap_type_tuple({"test", :longstr, "me"}) == {"test", "me"}
+    assert Utils.unwrap_type_tuple({"test", :long, 1}) == {"test", 1}
+  end
 end

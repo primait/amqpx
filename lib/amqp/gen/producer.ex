@@ -3,8 +3,10 @@ defmodule Amqpx.Gen.Producer do
   Generic implementation of amqp producer
   """
   require Logger
+  require OpenTelemetry.Tracer, as: Tracer
   use GenServer
   alias Amqpx.{Backoff.Jittered, Basic, Channel, Confirm, Helper}
+  alias OpenTelemetry.SemConv.Incubating.MessagingAttributes
 
   @type state() :: %__MODULE__{}
 
@@ -158,43 +160,55 @@ defmodule Amqpx.Gen.Producer do
           publish_retry_options: publish_retry_options
         } = state
       ) do
-    retry_policy = Keyword.get(publish_retry_options, :retry_policy, %{})
-    max_retries = Keyword.get(publish_retry_options, :max_retries, @default_max_retries)
-    backoff = Keyword.get(publish_retry_options, :backoff, @default_backoff)
+    Tracer.with_span :"publish amqp message", %{
+      kind: :producer,
+      attributes: [
+        {
+          MessagingAttributes.messaging_operation_type(),
+          MessagingAttributes.messaging_operation_type_values().create
+        },
+        {MessagingAttributes.messaging_destination_name(), "#{exchange}:#{routing_key}"},
+        {MessagingAttributes.messaging_rabbitmq_destination_routing_key(), routing_key}
+      ]
+    } do
+      retry_policy = Keyword.get(publish_retry_options, :retry_policy, %{})
+      max_retries = Keyword.get(publish_retry_options, :max_retries, @default_max_retries)
+      backoff = Keyword.get(publish_retry_options, :backoff, @default_backoff)
 
-    publish_options = %{
-      publisher_confirms: publisher_confirms,
-      publish_timeout: publish_timeout,
-      max_retries: max_retries,
-      retry_policy: retry_policy,
-      backoff: backoff
-    }
+      publish_options = %{
+        publisher_confirms: publisher_confirms,
+        publish_timeout: publish_timeout,
+        max_retries: max_retries,
+        retry_policy: retry_policy,
+        backoff: backoff
+      }
 
-    result =
-      case retry_policy do
-        [] ->
-          do_publish(
-            channel,
-            exchange,
-            routing_key,
-            payload,
-            publish_options,
-            Keyword.merge([persistent: true], options)
-          )
+      result =
+        case retry_policy do
+          [] ->
+            do_publish(
+              channel,
+              exchange,
+              routing_key,
+              payload,
+              publish_options,
+              Keyword.merge([persistent: true], options)
+            )
 
-        _any ->
-          do_retry_publish(
-            channel,
-            exchange,
-            routing_key,
-            payload,
-            retry_attempt,
-            publish_options,
-            Keyword.merge([persistent: true], options)
-          )
-      end
+          _any ->
+            do_retry_publish(
+              channel,
+              exchange,
+              routing_key,
+              payload,
+              retry_attempt,
+              publish_options,
+              Keyword.merge([persistent: true], options)
+            )
+        end
 
-    handle_publish_result(result, state)
+      handle_publish_result(result, state)
+    end
   end
 
   # Private functions
@@ -306,6 +320,11 @@ defmodule Amqpx.Gen.Producer do
          },
          options
        ) do
+    options =
+      options
+      |> Keyword.put_new(:headers, [])
+      |> Keyword.update!(:headers, &:otel_propagator_text_map.inject/1)
+
     with :ok <-
            Basic.publish(
              channel,

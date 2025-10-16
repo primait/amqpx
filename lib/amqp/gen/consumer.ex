@@ -5,7 +5,10 @@ defmodule Amqpx.Gen.Consumer do
   require Logger
   use GenServer
   import Amqpx.Core
-  alias Amqpx.{Basic, Channel, SignalHandler}
+  alias Amqpx.{Basic, Channel, SignalHandler, Utils}
+
+  alias OpenTelemetry.{Ctx, SemConv.Incubating.MessagingAttributes}
+  require OpenTelemetry.Tracer, as: Tracer
 
   defstruct [
     :channel,
@@ -214,7 +217,14 @@ defmodule Amqpx.Gen.Consumer do
 
   defp handle_message(
          message,
-         %{delivery_tag: tag, redelivered: redelivered, consumer_tag: consumer_tag} = meta,
+         %{
+           message_id: message_id,
+           correlation_id: correlation_id,
+           delivery_tag: tag,
+           redelivered: redelivered,
+           consumer_tag: consumer_tag,
+           routing_key: routing_key
+         } = meta,
          %__MODULE__{
            handler_module: handler_module,
            handler_state: handler_state,
@@ -222,34 +232,68 @@ defmodule Amqpx.Gen.Consumer do
            requeue_on_reject: requeue_on_reject
          } = state
        ) do
-    case handle_signals(state, consumer_tag) do
-      {:ok, state} ->
-        {:ok, handler_state} = handler_module.handle_message(message, meta, handler_state)
-        Basic.ack(state.channel, tag)
-        %{state | handler_state: handler_state}
+    headers = headers(meta)
 
-      {:stop, state} ->
-        state
-    end
-  rescue
-    e in _ ->
-      Logger.error(Exception.format(:error, e, __STACKTRACE__))
+    links =
+      Ctx.new()
+      |> :otel_propagator_text_map.extract_to(headers)
+      |> Tracer.current_span_ctx()
+      |> OpenTelemetry.link()
+      |> List.wrap()
 
-      Task.start(fn ->
-        :timer.sleep(backoff)
+    Tracer.with_span :"handle amqp message", %{
+      links: links,
+      kind: :consumer,
+      attributes: [
+        {MessagingAttributes.messaging_system(), "rabbitmq"},
+        {MessagingAttributes.messaging_message_id(), message_id},
+        {
+          MessagingAttributes.messaging_operation_type(),
+          MessagingAttributes.messaging_operation_type_values().process
+        },
+        {MessagingAttributes.messaging_message_conversation_id(), correlation_id},
+        {MessagingAttributes.messaging_rabbitmq_destination_routing_key(), routing_key},
+        {MessagingAttributes.messaging_rabbitmq_message_delivery_tag(), tag}
+      ]
+    } do
+      try do
+        case handle_signals(state, consumer_tag) do
+          {:ok, state} ->
+            {:ok, handler_state} = handler_module.handle_message(message, meta, handler_state)
+            Basic.ack(state.channel, tag)
+            %{state | handler_state: handler_state}
 
-        is_message_to_reject =
-          function_exported?(handler_module, :handle_message_rejection, 2) &&
-            (!requeue_on_reject || (redelivered && requeue_on_reject))
-
-        if is_message_to_reject do
-          handler_module.handle_message_rejection(message, e)
+          {:stop, state} ->
+            state
         end
+      rescue
+        e in _ ->
+          e = Exception.normalize(:error, e)
 
-        Basic.reject(state.channel, tag, requeue: requeue_on_reject && !redelivered)
-      end)
+          Logger.error(Exception.format(:error, e, __STACKTRACE__))
+          Tracer.set_status(:error, Exception.message(e))
 
-      state
+          ctx = Ctx.get_current()
+
+          Task.start(fn ->
+            Tracer.with_span ctx, "reprocess message after rejection", %{} do
+              :timer.sleep(backoff)
+
+              is_message_to_reject =
+                function_exported?(handler_module, :handle_message_rejection, 2) &&
+                  (!requeue_on_reject || (redelivered && requeue_on_reject))
+
+              if is_message_to_reject do
+                handler_module.handle_message_rejection(message, e)
+              end
+
+              Basic.reject(state.channel, tag, requeue: requeue_on_reject && !redelivered)
+            end
+          end)
+
+          state
+      end
+    end
   end
 
   @type signal_status :: :running | :draining | :stopping
@@ -276,4 +320,7 @@ defmodule Amqpx.Gen.Consumer do
 
   # No signals received run as normal
   defp handle_signals(:running, state, _), do: {:ok, state}
+
+  defp headers(%{headers: headers}) when is_list(headers), do: Enum.map(headers, &Utils.unwrap_type_tuple/1)
+  defp headers(_), do: []
 end

@@ -266,3 +266,10 @@ config :amqpx,
     rabbit: "rabbit:15672",
     rabbit_two: "rabbit_two:15673"
   }
+
+config :opentelemetry,
+  traces_exporter: :none
+
+config :opentelemetry, :processors, [
+  {:otel_simple_processor, %{}}
+]

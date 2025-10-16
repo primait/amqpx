@@ -10,6 +10,14 @@ and this project adheres to
 
 ---
 
+## [7.2.0] - 2025-10-16
+
+### Added
+
+- Opentelemetry instrumentation
+
+---
+
 ## [7.1.0] - 2025-09-22
 
 ### Added
@@ -206,7 +214,9 @@ This is due to elixir rabbit not supporting the older versions of the libraries
   queues instead of wildcard
 
 
-[Unreleased]: https://github.com/primait/amqpx/compare/7.1.0...HEAD
+
+[Unreleased]: https://github.com/primait/amqpx/compare/7.2.0...HEAD
+[7.2.0]: https://github.com/primait/amqpx/compare/7.1.0...7.2.0
 [7.1.0]: https://github.com/primait/amqpx/compare/7.0.0...7.1.0
 [7.0.0]: https://github.com/primait/amqpx/compare/6.1.3...7.0.0
 [6.1.3]: https://github.com/primait/amqpx/compare/6.1.2...6.1.3
