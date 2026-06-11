@@ -14,3 +14,14 @@ updates:
       - dependency-name: credo
         versions:
           - 1.5.4
+  - package-ecosystem: docker
+    directories:
+      - "*"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
