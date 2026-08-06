@@ -1,4 +1,4 @@
-FROM public.ecr.aws/prima/elixir:1.16.3
+FROM 279066465364.dkr.ecr.eu-west-1.amazonaws.com/prima-elixir:1.16.3
 
 WORKDIR /code
 
