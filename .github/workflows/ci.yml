@@ -14,7 +14,7 @@ jobs:
     env:
       MIX_ENV: gha
     steps:
-      - uses: erlef/setup-beam@5304e04ea2b355f03681464e683d92e3b2f18451 # v1.18.2
+      - uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1.24.1
         with:
           elixir-version: 1.16
           otp-version: 26
