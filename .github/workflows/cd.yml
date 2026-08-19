@@ -14,7 +14,7 @@ jobs:
           otp-version: "26"
           elixir-version: "1.16"
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
       - name: setup hex
         run: |
           mix local.hex --force
